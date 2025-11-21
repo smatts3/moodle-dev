@@ -33,7 +33,7 @@ $CFG = new stdClass();
 
 $CFG->dbtype    = 'mariadb';   
 $CFG->dblibrary = 'native';     
-$CFG->dbhost    = 'moodle_db';  
+$CFG->dbhost    = 'db';  
 $CFG->dbname    = 'moodle';     
 $CFG->dbuser    = 'moodleuser';
 $CFG->dbpass    = 'moodlepass';
