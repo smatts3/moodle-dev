@@ -1,6 +1,6 @@
-To launch a new instance of a dev environment run:
+To launch a new instance of a dev environment run, specifying an optional project name:
 
-    new.sh
+    new.sh [NAME]
 
 To generate a new build image do:
 
