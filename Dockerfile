@@ -5,8 +5,7 @@ RUN apt update && apt install git wget unzip -y
 
 # Import dev source code
 WORKDIR /var/www/html
-RUN git clone --branch develop --single-branch https://github.com/lsuonline/lsuce-moodle.git .
-RUN chown -R www-data:www-data . && chmod -R 755 .
+RUN su -g www-data -c "git clone --branch develop --single-branch https://github.com/lsuonline/lsuce-moodle.git ."
 
 # Install dependencies
 
