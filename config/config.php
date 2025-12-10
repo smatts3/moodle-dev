@@ -44,14 +44,15 @@ $CFG->dboptions = [
   'dbsocket' => '',
   'dbcollation' => 'utf8mb4_unicode_ci',
 ];
-
-$CFG->wwwroot   = 'http://localhost:8080';
+$public_port = trim(file_get_contents("/PUBLIC_PORT"));
+$CFG->wwwroot = "http://localhost:${public_port}";
 $CFG->wwwrootendsinpublic = false;
 $CFG->dataroot  = '/var/www/moodledata';
 $CFG->routerconfigured = false;
 $CFG->directorypermissions = 02777;
 $CFG->admin = 'admin';
-
+// $CFG->reverseproxy = true;
+// $CFG->sslproxy = false;
 
 require_once(__DIR__ . '/lib/setup.php'); // Do not edit
 

@@ -1,0 +1,6 @@
+Todo for dev environemnts:
+disable javascript caching
+snap theme
+import lsu stuff
+pre install
+fix restart

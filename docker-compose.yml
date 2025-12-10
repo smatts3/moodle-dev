@@ -7,19 +7,39 @@ services:
       MYSQL_DATABASE: moodle
       MYSQL_USER: moodleuser
       MYSQL_PASSWORD: moodlepass
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 1s
+      timeout: 1s
+      retries: 10
+    # networks:
+    #   - internal
 
   web:
     image: lsuonline/moodle-dev:latest
     depends_on:
-      - db
-    ports:
-      - "80"
+      db:
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_NAME: moodle
       DB_USER: moodleuser
       DB_PASSWORD: moodlepass
+      BRANCH_NAME: ${BRANCH_NAME:-default}
     restart: always
+    ports:
+      - "80"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${BRANCH_NAME}.rule=Host(`${BRANCH_NAME}.localhost`)
+      - traefik.http.routers.${BRANCH_NAME}.entrypoints=web
+      - traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${BRANCH_NAME}.middlewares=moodle-headers
+      - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Host={host}
+      - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Proto=https
+    # networks:
+    #   - traefik
+    #   - internal
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -32,3 +52,16 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpassword
     restart: always
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.http.routers.phpmyadmin-${BRANCH_NAME}.entrypoints=web
+    #   - traefik.http.services.phpmyadmin-${BRANCH_NAME}.loadbalancer.server.port=80
+    #   - traefik.http.routers.phpmyadmin-${BRANCH_NAME}.rule=Host(`phpmyadmin.${BRANCH_NAME}.localhost`)
+    # networks:
+    #   - traefik
+    #   - internal
+
+# networks:
+#   traefik:
+#     external: true
+#   internal:
