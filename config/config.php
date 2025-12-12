@@ -45,7 +45,7 @@ $CFG->dboptions = [
   'dbcollation' => 'utf8mb4_unicode_ci',
 ];
 $public_port = trim(file_get_contents("/PUBLIC_PORT"));
-$CFG->wwwroot = "http://localhost:${public_port}";
+$CFG->wwwroot = "http://localhost:{$public_port}";
 $CFG->wwwrootendsinpublic = false;
 $CFG->dataroot  = '/var/www/moodledata';
 $CFG->routerconfigured = false;
