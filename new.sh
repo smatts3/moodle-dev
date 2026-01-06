@@ -3,23 +3,19 @@ set -euo pipefail
 
 function cursorBack() {
   echo -en "\033[$1D"
-  # Mac compatible, but goes back to first column always. See comments
-  #echo -en "\r"
 }
 
 function spinner() {
-    # make sure we use non-unicode character type locale 
-    # (that way it works for any locale as long as the font supports the characters)
     local LC_CTYPE=C
 
-    local pid=$1 # Process Id of the previous running command
+    local pid=$1
     # local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     # local spin='⠁⠉⠙⠹⠽⠿⠾⠶⠦⠆⠂⠀'
     local spin='⠁⠉⠙⠹⠽⠾⠷⠯⠟⠻⠽⠾⠶⠦⠆⠂⠀'
     local charwidth=3
 
     local i=0
-    tput civis # cursor invisible
+    tput civis
     while kill -0 $pid 2>/dev/null; do
         local i=$(((i + $charwidth) % ${#spin}))
         printf "%s" "${spin:$i:$charwidth}"
@@ -28,127 +24,160 @@ function spinner() {
         sleep .016
     done
     tput cnorm
-    wait $pid # capture exit code
+    wait $pid
+    cursorBack
+    echo -en "\r\n"
+
     return $?
 }
 
-function extract_sesskey() {
-    html=$1
-    return ''
-}
 
-if [ $# -eq 1 ]; then
-    if [[ $1 == "-h" || $1 == "--help" ]]; then
-        echo "Usage: new.sh [OPTION]... [NAME]
+SKIP_INSTALL=false
+NAME=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: new.sh [OPTION]... [NAME]
     Creates a new dev environment named NAME (or random if not provided).
     Options:
         -h --help   Shows this text.
         -s --skip   Skip automatic Moodle installation.";
-        exit;
-    fi
-    NAME=$1
-else
-    #Otherwise use a random project name
+            exit;
+            ;;
+        -s|--skip)
+            SKIP_INSTALL=true
+            shift
+            ;;
+        *)
+            if [ -z "$NAME" ]; then
+                NAME=$1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# If no name provided, use a random one
+if [ -z "$NAME" ]; then
     NAME=$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -An -t x1 | tr -d ' \n')
 fi
 
 
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
-# docker network connect traefik $NAME-web-1
 
 #Figure out what port docker mapped to localhost
 PORT=$(docker port "${NAME}-web-1" 80 | head -n1 | sed 's/.*://' | tr -d '\r')
 
 # Inside the container, set the wwwroot config value to use localhost and the mapped port
-# MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" bash -lc "sed -Ei \"s|localhost:8080|localhost:${PORT}|g\" /var/www/html/config.php"
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" bash -lc "echo \"${PORT}\" > /PUBLIC_PORT"
-
-echo "A new LSU Online Moodle dev environment is up and running! Access it at: "
 # This should be a link in some terminals.
 URL="http://localhost:${PORT}"
-#printf '\033]8;;http://localhost:%s\033\\http://localhost:%s\033]8;;\033\\\n' "$PORT" "$PORT"
 
-echo "Waiting for database to come online."
-sleep 5 & spinner $!
+if [ "$SKIP_INSTALL" = false ]; then
+    echo "Waiting for database to come online."
+    sleep 5 & spinner $!
 
-printf '\e]8;;%s\a%s\e]8;;\a\n' "$URL" "$URL"
+    echo "Running Moodle CLI installation..."
 
-# echo "Running installation."
-# BASE_URL="http://localhost:${PORT}"
+    # Fill in config form defaults. Adapt as needed for your environment.
+    CFG_DBHOST="db"
+    CFG_DBNAME="moodle"
+    CFG_DBUSER="moodleuser"
+    CFG_DBPASS="moodlepass"
+    CFG_DBTYPE="mariadb"
+    CFG_WWWROOT="${URL}"
+    CFG_LANG="en"
+    CFG_DATAROOT="/var/www/moodledata"
+    CFG_PREFIX="mdl_"
+    CFG_ADMINUSER="admin"
+    CFG_ADMINPASS="Password1!"
+    CFG_ADMINEMAIL="admin@example.com"
+    CFG_FULLNAME="LSU Online Moodle (test)"
+    CFG_SHORTNAME="LSU Online (test)"
+    CFG_SUPPORTEMAIL="admin@example.com"
 
-# mkdir -p cookies
-# touch cookies/$NAME
-# # Do fill first page.
-# exec 3< <(curl -Lsc cookies/$NAME -b cookies/$NAME "${BASE_URL}/admin/index.php?cache=0&agreelicense=1&confirmrelease=1&lang=en" \
-#     | grep sesskey \
-#     | sed -n 's/.*"sesskey":"\([^"]*\)".*/\1/p')
-# spinner "$!"
+    # Run Moodle CLI installation
+    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/install.php \
+        --non-interactive \
+        --agree-license \
+        --allow-unstable \
+        --lang="${CFG_LANG}" \
+        --wwwroot="${CFG_WWWROOT}" \
+        --dataroot="${CFG_DATAROOT}" \
+        --dbtype="${CFG_DBTYPE}" \
+        --dbhost="${CFG_DBHOST}" \
+        --dbname="${CFG_DBNAME}" \
+        --dbuser="${CFG_DBUSER}" \
+        --dbpass="${CFG_DBPASS}" \
+        --prefix="${CFG_PREFIX}" \
+        --fullname="${CFG_FULLNAME}" \
+        --shortname="${CFG_SHORTNAME}" \
+        --adminuser="${CFG_ADMINUSER}" \
+        --adminpass="${CFG_ADMINPASS}" \
+        --adminemail="${CFG_ADMINEMAIL}" \
+        --supportemail="${CFG_SUPPORTEMAIL}" \
+        2>/dev/null &
+    spinner $!
 
-# read -r sesskey <&3
+    echo -e "\nInstallation complete!"
+else
+    echo "Skipping Moodle installation (--skip flag provided)."
+fi
 
-# exec 3>&-
+echo "Setting up theme..."
 
-# echo "Grabbing sesskey. $sesskey"
+# Set theme to snap.
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+    --name=theme \
+    --set=snap \
+    & spinner $!
 
-# sesskey=$(curl -Lsc cookies/$NAME -b cookies/$NAME "${BASE_URL}/user/editadvanced.php?id=2" \
-#     | grep sesskey \
-#     | sed 's/.*"sesskey":"\([^"]*\)".*/\1/p' -n )
+#Set snap colors to blue.
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+    --component=theme_snap \
+    --name="themecolor" \
+    --set="#461d7c" \
+    & spinner $!
 
-# echo "Setting up admin user. $sesskey"
-# # Do second page.
-# exec 3< <(curl -Lsc cookies/$NAME -b cookies/$NAME \
-# -o responses/$NAME.html \
-# --location "${BASE_URL}/user/editadvanced.php" \
-# -X POST \
-# --header 'Content-Type: application/x-www-form-urlencoded' \
-# --header "Origin: ${BASE_URL}" \
-# --header "Referer: ${BASE_URL}/user/editadvanced.php?id=2" \
-# --data-urlencode 'course=1' \
-# --data-urlencode 'returnto=' \
-# --data-urlencode "sesskey=$sesskey" \
-# --data-urlencode 'username=admin' \
-# --data-urlencode 'newpassword=Password1!' \
-# --data-urlencode 'firstname=Admin' \
-# --data-urlencode 'lastname=User' \
-# --data-urlencode 'email=blah@blah.com' \
-# --data-urlencode 'maildisplay=1' \
-# --data-urlencode 'timezone=99' \
-# --data-urlencode 'submitbutton=Update profile' \
-#     | grep sesskey \
-#     | sed -n 's/.*"sesskey":"\([^"]*\)".*/\1/p')
-# spinner "$!"
+#Set site name
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+    --component=theme_snap \
+    --name=fullname \
+    --set="Welcome to LSU Moodle (test)!" \
+    & spinner $!
 
-# read -r sesskey <&3
-# exec 3>&-
+#Set site description
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+    --component=theme_snap \
+    --name=subtitle \
+    --set="Louisiana State University (test)" \
+    & spinner $!
 
-# sleep 1
+#Set font to Roboto
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+    --component=theme_snap \
+    --name=headingfont \
+    --set="Roboto" \
+    & spinner $!
 
-# echo "Setting up admin user. $sesskey"
-# # Do second page.
-# exec 3< <(curl -Lsc cookies/$NAME -b cookies/$NAME \
-# -o responses/$NAME.html \
-# --location "${BASE_URL}/user/editadvanced.php" \
-# -X POST \
-# --header 'Content-Type: application/x-www-form-urlencoded' \
-# --header "Origin: ${BASE_URL}" \
-# --header "Referer: ${BASE_URL}/user/editadvanced.php?id=2" \
-# --data-urlencode 'course=1' \
-# --data-urlencode 'returnto=' \
-# --data-urlencode "sesskey=$sesskey" \
-# --data-urlencode 'username=admin' \
-# --data-urlencode 'newpassword=Password1!' \
-# --data-urlencode 'firstname=Admin' \
-# --data-urlencode 'lastname=User' \
-# --data-urlencode 'email=blah@blah.com' \
-# --data-urlencode 'maildisplay=1' \
-# --data-urlencode 'timezone=99' \
-# --data-urlencode 'submitbutton=Update profile' \
-#     | grep sesskey \
-#     | sed -n 's/.*"sesskey":"\([^"]*\)".*/\1/p')
-# spinner "$!"
+#Set custom CSS (if config/custom.css exists and is not empty)
+CUSTOM_CSS_FILE="$(dirname "$0")/config/custom.css"
+if [ -s "$CUSTOM_CSS_FILE" ]; then
+    # Copy CSS file to container and set via PHP (file too large for command line arg)
+    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-web-1:/tmp/custom.css"
+    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php -r "
+        define('CLI_SCRIPT', true);
+        require('/var/www/html/config.php');
+        \$css = file_get_contents('/tmp/custom.css');
+        set_config('customcss', \$css, 'theme_snap');
+    "
+    MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" rm /tmp/custom.css
+fi
 
-# read -r sesskey <&3
-# exec 3>&-
-
-# curl -Lsc cookies/$NAME --location "${BASE_URL}/admin" \
-# & spinner $! 
+echo ""
+echo "A new LSU Online Moodle dev environment ($NAME) is up and running. Log in here: "
+LOGIN_URL="$URL/login/index.php"
+printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
+printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"

@@ -29,13 +29,13 @@ RUN apt-get install -y \
 
 # Copy over configs
 COPY --chown=www-data:www-data config/php.ini /usr/local/etc/php/php.ini
-COPY --chown=www-data:www-data config/config.php /var/www/html/config.php
+# COPY --chown=www-data:www-data config/config.php /var/www/html/config.php
 # COPY --chmod=0777 config/install.sh /install.sh
 
 # Tweaky stuff && set permissions
 RUN git config --global --add safe.directory /var/www/html && \
-chown www-data:www-data /var/www/html/config.php && \
-	chmod 755 /var/www/html/config.php && \
+# chown www-data:www-data /var/www/html/config.php && \
+	# chmod 755 /var/www/html/config.php && \
 	chown www-data:www-data /usr/local/etc/php/php.ini && \
 	chmod 755 /usr/local/etc/php/php.ini && \
 	mkdir -p /var/www/moodledata/storage && \ 

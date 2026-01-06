@@ -1,0 +1,2840 @@
+body {
+  font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 400;
+}
+
+h1,h2,h3,h4,h5,h6,h7,h8,h8,h9,h10 {
+  font-family: "Raleway",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 300;
+}
+
+h1 {
+  font-size: 2rem;
+  margin: 0.75em 0;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin: 0.65em 0;
+}
+
+h3 {
+  font-size: 1.6rem;
+  margin: 0.55em 0;
+}
+
+h4 {
+  font-size: 1.4rem;
+  margin: 0.45em 0;
+}
+
+h5 {
+  font-size: 1.2rem;
+  margin: 0.35em 0;
+}
+
+h6 {
+  font-size: 1rem;
+  margin: 0.25em 0;
+}
+
+label,
+.label,
+.form-label,
+.form-defaultinfo,
+.form-description,
+.form-filemanager,
+.ffilepicker,
+.ffilemanager,
+.fdescription,
+.fstatic,
+.collapsible-actions,
+input,
+button,
+select,
+.pagination,
+.initialbar,
+.paging,
+.alert,
+#page-admin-index .releasenoteslink,
+#page-admin-index .adminwarning,
+#page-admin-index .adminerror,
+.que .formulation,
+.que .outcome,
+.que .comment,
+.assignfeedback_editpdf_widget .label,
+.nav-pills,
+.nav-tabs,
+.course-report-dashboard,
+.yui3-tabview-list,
+.yuimenu,
+#course-category-listings,
+.progress .bar,
+.dndupload-progress-outer .bar,
+.progress-bar,
+.dndupload-progress-inner,
+.yui-dt-paginator {
+  font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 400;
+}
+
+.theme-snap .button-group>button.default,
+.theme-snap .btn.btn-primary,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary {
+  color: #fff;
+  background-color: #461d7c;
+  border-color: #461d7c;
+}
+
+.theme-snap .button-group>button.default:hover,
+.theme-snap .btn.btn-primary:hover,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:hover,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:hover,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:hover,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:hover,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:hover,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:hover,
+.theme-snap .button-group>button.default:focus,
+.theme-snap .btn.btn-primary:focus,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:focus,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:focus,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:focus,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:focus,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:focus,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:focus,
+.theme-snap .button-group>button.default:active,
+.theme-snap .btn.btn-primary:active,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:active,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:active,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:active,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:active,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:active,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:active,
+.theme-snap .button-group>button.default.active,
+.theme-snap .btn.btn-primary.active,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary.active,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary.active,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary.active,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary.active,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary.active,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary.active {
+  background-color: #2f1353;
+  border-color: #2f1353;
+  outline: 3px #461d7c;
+}
+
+.theme-snap #mr-nav a.snap-login-button {
+  color: #461d7c;
+  background-color: #ffffff;
+  border-color: #461d7c;
+}
+
+.theme-snap #mr-nav a.snap-login-button:hover {
+  color: #ffffff;
+  background-color: #461d7c;
+  border-color: #3a1867;
+  -webkit-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  -o-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+#page-site-index .sitetopic,
+#frontpage-category-names,
+#frontpage-category-combo {
+  margin-top: 0;
+  padding-top: 0 !important;
+}
+
+#page-site-index #page-mast {
+  background-color: rgba(255, 255, 255, 0.7);
+  margin-top: 10%;
+  border-radius: .3em;
+
+}
+
+#page-header.mast-image {
+  box-shadow: inset 0 200px 200px -100px black;
+  background-attachment: fixed;
+  background-position: center center;
+}
+
+#page-site-index #page-mast h1 {
+  letter-spacing: -.01em;
+}
+
+#page-site-index #page-mast p {
+  letter-spacing: normal;
+}
+
+#page-site-index #page-header {
+  min-height: 50vh;
+  padding-top: 0;
+}
+
+.path-grade-report .floating .cell {
+  background-color: #f9f9f9 !important;
+}
+
+#page-grade-edit-tree-index table tbody,
+#page-grade-edit-tree-index table tr,
+#page-grade-edit-tree-index table th,
+#page-grade-edit-tree-index table td {
+  background-color: transparent !important;
+}
+
+
+#page-grade-edit-tree-index tr.coursecategory.category,
+#page-grade-edit-tree-index tr.courseitem.item {
+  background-color: #eeeeee !important;
+}
+
+#page-grade-edit-tree-index tr h4 {
+  color: #000000 !important;
+}
+
+#page-grade-edit-tree-index tr.item {
+  background-color: #ffffff !important;
+}
+
+#page-grade-edit-tree-index tr.category {
+  background-color: #F9F5FE !important;
+}
+
+#page-grade-edit-tree-index tr.categoryitem.item {
+  background-color: #F9F5FE !important;
+}
+
+.path-mod-lti.theme-snap #region-main {
+  max-width: none;
+}
+
+.ues_people #region-main {
+  max-width: none;
+}
+
+#page-mod-lesson-view.path-mod-lesson #region-main {
+  max-width: none;
+}
+
+#page-mod-turnitintooltwo-view #region-main {
+  max-width: none;
+}
+
+#page-mymedia-index #region-main {
+  max-width: none;
+}
+
+.path-mod-workshop #region-main {
+  max-width: none;
+}
+
+.path-mod-workshop .assessment-full .assessment-form-wrapper, .path-mod-workshop .assessment-full .overall-feedback-wrapper {
+  overflow: auto;
+}
+
+.path-mod-workshop .assessment-full .assessment-form-wrapper .text-nowrap, .path-mod-workshop .assessment-full .overall-feedback-wrapper .text-nowrap {
+  white-space: normal !important;
+}
+
+#page-mod-lesson-view.path-mod-lesson span.text-nowrap {
+  white-space: normal !important;
+}
+
+#page-blocks-ues_meta_viewer-viewer #region-main {
+  max-width: none;
+}
+
+#page-blocks-student_gradeviewer-viewgrades #region-main {
+  max-width: none;
+}
+
+#moodle-footer #snap-site-footer {
+  width: 50%;
+  float: left;
+}
+
+#moodle-footer #moodle-custom-menu {
+  width: 50%;
+  float: right;
+  clear: none;
+}
+
+#mrooms-footer {
+  display: none !important;
+}
+
+@media screen and (max-width: 1025px) {
+  #moodle-footer #snap-site-footer {
+    width: 100%;
+    float: none;
+  }
+
+  #moodle-footer #moodle-custom-menu {
+    width: 100%;
+    float: none;
+  }
+
+  #page-site-index #page-mast {
+    margin-top: 20% !important;
+    border-radius: .3em;
+  }
+}
+
+#snap-home.logo {
+  height: 40px;
+  margin-left: -3%;
+}
+
+#page-site-index p.alert.error {
+  border-left: 3em solid;
+}
+
+@supports (display: flex) {
+  @media screen and (max-width: 1001px) {
+    #page-header {
+      padding-top: 4em;
+    }
+  }
+  @media screen and (max-width: 785px) {
+    #page-header {
+      padding-top: 5em;
+    }
+    #snap-home.logo {
+      width: 15em;
+    }
+    body.ios #snap-home.logo,
+    body.android #snap-home.logo {
+      width: 25% !important;
+    }
+    #page-site-index #page-mast {
+      margin-top: 20% !important;
+      border-radius: .3em;
+    }
+    #page-site-index #page-header {
+      min-height: 30vh;
+      padding-top: 0;
+      max-height: 50vh;
+    }
+    #page-header.mast-image {
+      background-position: left bottom;
+    }
+  }
+  @media screen and (max-width: 500px) {
+    #snap-home.logo {
+      width: 25%;
+    }
+    body.ios #page-header.mast-image,
+    body.android #page-header.mast-image {
+      box-shadow: inset 0 200px 200px -100px black;
+      background-attachment: fixed;
+      background-position: center center;
+      background-size: cover;
+    }
+    body.ios #snap-home.logo,
+    body.android #snap-home.logo {
+      width: 25% !important;
+    }
+    body.ios #snap-pm-content h2,
+    body.android #snap-pm-content h2 {
+      padding: 1.5em 0 .5em 0;
+    }
+    #page-site-index #page-mast {
+      margin-top: 25% !important;
+      border-radius: .3em;
+    }
+    #page-site-index #page-header {
+      min-height: 20vh;
+      padding-top: 0;
+      max-height: 50vh;
+      background-position-y: 2em;
+      background-repeat: no-repeat;
+    }
+    #page-header.mast-image {
+      background-position: left bottom;
+    }
+  }
+  @media screen and (max-width: 400px) {
+    #snap-home.logo {
+      width: 25% !important;
+    }
+    body.ios #snap-home.logo,
+body.android #snap-home.logo {
+      width: 25% !important;
+    }
+    body.ios #snap-pm-content h2,
+body.android #snap-pm-content h2 {
+      padding: 1.5em 0 .5em 0;
+    }
+    #page-site-index #page-mast {
+      margin-top: 25% !important;
+      border-radius: .3em;
+    }
+    #page-site-index #page-header {
+      min-height: 20vh;
+      padding-top: 0;
+      max-height: 40vh;
+      background-position-y: 2em;
+      background-repeat: no-repeat;
+    }
+    #page-header.mast-image {
+      background-position: left bottom;
+    }
+  }
+}
+
+.text-muted,
+a.dimmed,
+a.dimmed:link,
+a.dimmed:visited,
+a.dimmed_text,
+a.dimmed_text:link,
+a.dimmed_text:visited,
+.dimmed_text,
+.dimmed_text a,
+.dimmed_text a:link,
+.dimmed_text a:visited,
+.usersuspended,
+.usersuspended a,
+.usersuspended a:link,
+.usersuspended a:visited,
+.dimmed_category,
+.dimmed_category a,
+.tag_feed .media .muted a,
+#page-admin-qtypes .disabled,
+#page-admin-qbehaviours .disabled,
+#page-admin-plugins #plugins-control-panel .pluginname .componentname,
+#page-admin-plugins #plugins-control-panel .version .versionnumber,
+#page-admin-plugins #plugins-control-panel .notes .requiredby,
+#plugins-check-page .page-description,
+#plugins-check-page #plugins-check .requires-ok,
+#plugins-check-page #plugins-check .displayname .plugindir,
+#plugins-check-page #plugins-check-available-dependencies .displayname .component,
+#page-admin-search .adminpagepath li,
+.block .minicalendar td.weekend,
+.fitem.disabled .fp-btn-choose,
+.form-defaultinfo,
+.form-label .form-shortname,
+.formsettingheading .form-horizontal,
+.no-felement.fstatic,
+.path-backup .backup_progress .backup_stage {
+  color: #AD1917!important;
+}
+
+.text-warning,
+.red,
+.notifyproblem,
+.completion-expired,
+span.flagged-tag,
+tr.flagged-tag,
+span.flagged-tag a,
+tr.flagged-tag a,
+.moodle-dialogue-exception .param-stacktrace .stacktrace-line,
+.connecting {
+  color: #AD1917!important;
+}
+
+.breadcrumb-nav {
+  margin-top: 0;
+}
+
+.theme-snap .dropdown-menu>li>a:hover,
+.theme-snap .dropdown-menu>li>a:focus {
+  background-color: #fef9e6 !important;
+  color: #000000 !important;
+}
+
+body.path-grade .dimmed_text .gradeitemheader:after {
+  content: " - hidden";
+}
+
+.book .summary-text.row div {
+  flex: none;
+  max-width: 100%;
+}
+
+body.pagelayout-incourse .activity-navigation div.pull-left,
+body.pagelayout-incourse .activity-navigation div.pull-right {
+  display: none;
+}
+
+#snap-course-wrapper #chapters li.draft .chapter-title:before {
+  background-color: #ad1917;
+}
+
+#snap-course-wrapper #chapters li.current .chapter-title:before {
+  background-color: #28a745;
+}
+
+#page-mod-assign-view .assign-grading-summary,
+#page-mod-assign-view .assign-submission-data,
+#page-mod-assign-view .assign-feedback,
+#page-mod-assign-view .groupselector {
+  width: calc(33.33% - 2em);
+  margin: 0 2em 0 0;
+  float: left !important;
+}
+
+#page-mod-assign-view div {
+  border-radius: .3em;
+}
+
+.theme-snap .atto_morefontcolors_button .dropdown-menu>li>a:hover,
+.theme-snap .atto_morefontcolors_button .dropdown-menu>li>a:focus {
+  background-color: transparent;
+}
+
+body#page-grade-report-user-index table.boxaligncenter.generaltable.user-grade a,
+body#page-grade-report-user-index table.boxaligncenter.generaltable.user-grade span,
+body#page-grade-report-user-index table.boxaligncenter.generaltable.user-grade .icon,
+body#page-grade-report-user-index table.boxaligncenter.generaltable.user-grade .gradeitemdescription {
+  background-color: transparent !important;
+}
+
+body#page-grade-report-user-index .levelodd {
+  background-color: #f5f5f5 !important;
+}
+
+body#page-grade-report-user-index .leveleven {
+  background-color: #ffffff !important;
+}
+
+body#page-grade-report-user-index .page-header-headings h2 {
+  padding-right: 1em;
+}
+
+/*
+.notloggedin.pagelayout-frontpage .pull-right {
+  margin-right: -4%;
+}
+*/
+
+.btn, .btn:hover, .btn:active, .active {
+  outline: none !important;
+}
+
+.snap-draft-tag, .snap-current-tag {
+  border-radius: .3em;
+}
+
+.snap-current-tag {
+  color: #000;
+  background-color: #e1ead7;
+}
+
+.snap-draft-tag {
+  color: #000;
+  background-color: #ead7d7;
+}
+
+body.snap-pm-open #snap-pm {
+  background-color: #fafafa;
+}
+
+body.snap-pm-open .coursecard {
+  border: 1px solid #3a1867;
+}
+
+#page-grade-edit-tree-index table.generaltable th.column-rowspan {
+  border: none !important;
+}
+
+#page-grade-edit-tree-index table.generaltable .level1.column-rowspan,
+#page-grade-edit-tree-index table.generaltable .level2.column-rowspan,
+#page-grade-edit-tree-index table.generaltable .level3.column-rowspan,
+#page-grade-edit-tree-index table.generaltable .level4.column-rowspan,
+#page-grade-edit-tree-index table.generaltable .level5.column-rowspan {
+border: 1px solid #bbbbbb !important;
+border-right: none !important;
+}
+
+.path-grade-edit-tree .setup-grades .column-range {
+  padding-left: 0 !important;
+}
+
+#page-course-loginas #region-main {
+min-height: 550px;
+}
+
+#page-course-loginas #user-notifications {
+margin-top: 5%;
+}
+
+#page-site-index .label img.lsuicons {
+  max-width: 50% !important;
+  width: 50%;
+  height: 50%;
+}
+
+#snap-pm-courses-current-cards {
+  margin-bottom: 2em;
+}
+
+#page-grade-edit-tree-index table tbody tr td,
+#page-grade-edit-tree-index table.generaltable thead th,
+#page-grade-edit-tree-index table.generaltable th {
+  border-color: #bbbbbb !important;
+}
+
+#page-grade-edit-tree-index .path-grade-edit-tree .setup-grades .column-weight {
+  padding: right: 17px;
+}
+
+.path-grade-edit-tree .setup-grades .column-weight {
+  padding-left: 17px !important;
+}
+
+.path-grade-edit-tree .setup-grades .column-weight input[type="checkbox"] {
+  margin-left: -17px;
+}
+
+.path-grade-edit-tree .setup-grades input[type="checkbox"] {
+  outline-color: #461d7c;
+  outline-offset: -1px;
+  outline-style: solid;
+  outline-width: 1px;
+}
+
+#page-grade-import-direct-index .gradeimport_data_area {
+  width: auto;
+  height: auto;
+}
+
+#page-grade-import-direct-index .gradeimport_data_area textarea#id_userdata {
+  width: 100%;
+  height: auto;
+  min-height: 275px;
+}
+
+.path-mod-book .book_toc_numbered>ul li,
+.path-mod-book .book_toc_indented>ul li,
+.path-mod-book .book_toc_none>ul li {
+ margin-bottom: .6em;
+}
+
+.path-mod-book .book_toc_numbered>li:last-of-type,
+.path-mod-book .book_toc_indented>ul li:last-of-type,
+.path-mod-book .book_toc_none>ul li:last-of-type {
+ margin-bottom: 0;
+}
+
+.breadcrumb {
+  font-size: 1em;
+}
+
+#page-mod-book-view section#region-main {
+  width: 60%;
+  float: right;
+  padding: 0 2em 0 0;
+}
+
+#page-mod-book-view div#moodle-blocks {
+  width: 40%;
+  float: left;
+  clear: none;
+  padding: 0 1em 0 0;
+  margin-left: 0;
+}
+
+#page-mod-book-view div.action-list>a>i.icon.fa-fw  {
+  margin: 0px;
+  -webkit-transition: all .1s ease-in-out;
+  -o-transition: all .1s ease-in-out;
+  transition: all .1s ease-in-out;
+}
+
+#page-mod-book-view div.action-list>a>i.icon.fa-fw:hover  {
+  -webkit-transform: scale(1.25);
+  -moz-transform: scale(1.25);
+  -ms-transform: scale(1.25);
+  -o-transform: scale(1.25);
+  transform: scale(1.25);
+}
+
+#snap-course-footer {
+  background-color: #fafafa;
+  border-top: 1px solid #dee2e6;
+}
+
+#mr-nav #snap-pm-trigger {
+  background-color: transparent;
+}
+
+ /*
+// FOR HIDING CAS HELP LINKS
+// #snap-pm-content>section>h2.nav {
+//   display: none;
+// }
+*/
+
+#snap-pm-header #snap-pm-header-quicklinks a:after {
+content: "\2022";
+}
+
+#page-site-index .buttons {
+  text-align: center;
+}
+
+.userpicture {
+  border: 1px solid rgba(255,255,255,0.7);
+}
+
+.snap-pm-user .userpicture {
+  border: 2px solid rgba(255,255,255,0.7);
+}
+
+.theme-snap #mr-nav #nav-notification-popover-container .icon.fa-bell:hover {
+  animation: ringingbell .2s infinite;
+}
+
+@keyframes ringingbell {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  50% {
+    transform: rotate(0);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+#snap-socialmedia-links a img:hover {
+  animation: smiconsjiggle .1s infinite;
+}
+
+@keyframes smiconsjiggle {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(5deg);
+  }
+  50% {
+    transform: rotate(0);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+#page-blocks-simple_restore-list #region-main {
+  max-width: none;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable {
+  table-layout: fixed !important;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable .c0 {
+  white-space: nowrap !important; 
+  overflow: hidden !important;
+  text-overflow: ellipsis;
+  width: auto;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable .c1 {
+  width: 6em;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable .c2 {
+  width: 15em;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c0 {
+  overflow: visible !important;
+}
+
+#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c1, #page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c2 {
+  color: transparent !important;
+}
+
+#page-course-edit ol.breadcrumb li.breadcrumb-item {
+/*  display: inline; */
+}
+
+#page-mod-book-view .book_content ul, #page-mod-book-view .book_content ol {
+  padding-left: 2.5rem;
+}
+
+#page-mod-turnitintooltwo-view .partDetails div.introduction {
+  font-size: 120%;
+}
+
+#page-mod-turnitintooltwo-view div#page-header>div#page-mast {
+  display: none;
+}
+
+.modtype_book .asset-wrapper .snap-asset-content .summary-text.row p,
+.modtype_book .asset-wrapper .snap-asset-content #course-category-listings.summary-text p {
+  font-size: 1rem !important;
+  line-height: 1.6em !important;
+  margin: 0.5em 0 !important;
+}
+
+.modtype_book .asset-wrapper .snap-asset-content .summary-text.row h4,
+.modtype_book .asset-wrapper .snap-asset-content #course-category-listings.summary-text h4 {
+  font-size: 1.4rem;
+  margin: 0.45em 0;
+}
+
+#page-site-index ul.section.img-text li.snap-asset.activity.label.modtype_label {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#page-site-index ul.section.img-text li.snap-asset.activity.label.modtype_label div.asset-wrapper {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.path-mod-scorm #region-main {
+  max-width: none;
+}
+
+
+/* BEGIN Update fonts system wide. */
+body {
+  font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 400;
+  color: #111111;
+}
+/* END Update fonts system wide. */
+
+/* BEGIN Update headings system wide. */
+h1,h2,h3,h4,h5,h6,h7,h8,h8,h9,h10 {
+  font-family: "Raleway",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 300;
+}
+/* END Update headings system wide. */
+
+/* BEGIN Make menu bar consistent across all elements. */
+#mr-nav #snap-pm-trigger {
+  background-color: transparent;
+}
+/* END Make menu bar consistent across all elements. */
+
+/* BEGIN Animate ringing bell. */
+.theme-snap #mr-nav #nav-notification-popover-container .icon.fa-bell:hover {
+  animation: ringingbell .2s infinite;
+}
+
+@keyframes ringingbell {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  50% {
+    transform: rotate(0);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+/* BEGIN Animate ringing bell. */
+
+/* BEGIN Hide top custom menu bar. */
+div#snap-custom-menu {
+  display: none !important;
+}
+
+div.snap-custom-menu-spacer {
+  display: none !important;
+}
+/* End Hide top custom menu bar. */
+
+/* BEGIN Style bottom custom menu bar. */
+body:not(.pagelayout-course) #moodle-footer {
+  margin-top: 0;
+}
+
+div#footer-snap-custom-menu {
+  background-color: #471d7c;
+  vertical-align: middle;
+  display: inline-block;
+  width: 100%;
+  height: auto;
+}
+
+body:not(.pagelayout-course) div#footer-snap-custom-menu {
+  margin-top: 2em;
+}
+
+div#footer-snap-custom-menu nav.navbar {
+  max-height: none;
+}
+
+div#footer-snap-custom-menu ul,
+div#footer-snap-custom-menu li {
+  list-style-type: none;
+  vertical-align: middle;
+  background-color: #471d7c;
+  padding: 0;
+  margin: 0;
+}
+
+div#footer-snap-custom-menu li .dropdown-menu {
+  margin-top: 0;
+  border-radius: 0 0 0.5em 0.5em;
+  color: #ffffff;
+  background-color: #471d7c;
+  box-shadow: 0px 10px 10px 0px rgba(0,0,0,0.33);
+  border: 1px solid #3a1867;
+  border-top: none;
+}
+
+div#footer-snap-custom-menu li a,
+div#footer-snap-custom-menu li a:link,
+div#footer-snap-custom-menu li a:visited {
+  color: #ffffff;
+  outline: none;
+  background-color: #471d7c;
+}
+
+div#footer-snap-custom-menu li a:hover {
+  color: #fdd023;
+  background-color: #3a1867;
+  outline: none;
+  transition: all 0.2s ease-in;
+}
+
+div#footer-snap-custom-menu li a:active {
+  color: #ffffff;
+  background-color: #471d7c;
+  outline: none;
+  transition: all 0.2s ease-out;
+}
+/* END Style bottom custom menu bar. */
+
+/* BEGIN Get rid of unnecessary padding in footer. */
+#moodle-footer {
+  padding-top: 0;
+}
+
+#moodle-footer #snap-socialmedia-links {
+  padding-top: 0;
+}
+
+#moodle-footer #snap-footer-content {
+  padding-bottom: 0;
+}
+/* END Get rid of unnecessary padding in footer. */
+
+/* BEGIN Login page changes. */
+body.snap-pm-open.notloggedin #snap-pm {
+  background-color: #461d7c;
+  height: 100%;
+}
+
+body.snap-pm-open.notloggedin #snap-pm #snap-pm-inner {
+  box-shadow: #000 -5em -5em 30em;
+}
+
+#page-site-index.notloggedin #snap-pm-inner div.snap-pm-section div.snap-pm-content form div:nth-child(2) label:before {
+  content: "CE Moodle login:";
+  font-size: 1.5rem;
+  display: block;
+  font-family: "Raleway",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 300;
+  text-align: center;
+  clear: both;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-inner div.snap-pm-section div.vertical-divider,
+#page-site-index.notloggedin #snap-pm #snap-pm-inner div.snap-pm-section div.horizontal-divider {
+  display: none;
+}
+
+#page-site-index.notloggedin.snap-pm-open #footer-snap-custom-menu,
+#page-login-index.notloggedin #footer-snap-custom-menu {
+  display: none !important;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-login-help a {
+  background-color: #fdd023;
+  color: #461d7c;
+  border-color: #fdd023;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-login-help a:hover {
+  background-color: #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-login-help a:active {
+  background-color: #fdd023;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-header {
+  background-image: url("https://cemoodle.online.lsu.edu/pix/lsu/lsu_ffffff.svg");
+  background-position: 1em center;
+  -webkit-background-size: contain;
+  background-size: auto 75%;
+  background-repeat: no-repeat;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-header h1 {
+  display: none;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-inner .snap-pm-section {
+  margin: 0 0;
+  background-image: url("https://testrusso.lsu.edu/39/pluginfile.php/1/theme_snap/coverimage/1606775042/site-image.jpg");
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: center bottom;
+  width: 100%;
+  justify-content: center;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content {
+  padding: 2em;
+  border: 1px solid #461d7c;
+  border-radius: 0.25rem;
+  background-color: rgba(240, 240, 240, 0.9);
+  max-width: 30em;
+  margin: 2em 0;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-inner div.snap-pm-section footer-snap-custom-menu {
+  display: none;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content {
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content:first-of-type {
+  border: 1px solid #461d7c;
+  border-radius: 0.25rem;
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#page-login-index .snap-login-cell, #page-login-signup .snap-login-cell {
+  margin: 0;
+}
+
+#page-login-index.notloggedin #snap-pm .snap-login,
+#page-login-signup.notloggedin #snap-pm .snap-login {
+  padding: 1em 4% !important;
+  max-width: none !important;
+  border-radius: 0.25rem;
+  margin: -2em auto 4em auto !important;
+  background-color: rgba(255,255,255,.7) !important;
+}
+
+#page-site-index.notloggedin #snap-pm #snap-pm-login-help {
+  bottom: 2%;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content div.subcontent.potentialidps>h6,
+#page-login-index.notloggedin #snap-pm .snap-login>h5 {
+  text-align: center;
+  font-size: 1.5rem;
+  white-space: nowrap;
+} 
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content .potentialidplist .potentialidp a,
+#page-login-index.notloggedin #snap-pm .snap-login .potentialidplist .potentialidp a {
+  background-color: #461d7c;
+  display: block;
+  padding: 0.25em 0.75em;
+  margin: 0.5em auto;
+  border: 2px solid #3a1867;
+  border-radius: 0.25rem;
+  font-size: 1em;
+  cursor: pointer;
+  color: #fff;
+  text-align: center;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content .potentialidplist .potentialidp a {
+  max-width: 23em;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content .potentialidplist .potentialidp a:visited {
+  color: #fff;
+}
+
+#page-login-index.notloggedin #snap-pm .snap-login .potentialidplist .potentialidp a:visited {
+  color: #fff;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content .potentialidplist .potentialidp a:hover {
+  background-color: #fdd023;
+  text-decoration: none;
+  color: #3a1867 !important;
+  transition: all 0.2s ease-in-out;
+}
+
+#page-login-index.notloggedin #snap-pm .snap-login .potentialidplist .potentialidp a:hover {
+  background-color: #fdd023;
+  text-decoration: none;
+  color: #3a1867 !important;
+  transition: all 0.2s ease-in-out;
+}
+
+#page-site-index.notloggedin #snap-pm .snap-pm-content .potentialidplist .potentialidp a:active {
+  box-shadow: 0 0 5px #3a1867 inset;
+}
+
+#page-login-index.notloggedin #snap-pm .snap-login .potentialidplist .potentialidp a:active {
+  box-shadow: 0 0 5px #3a1867 inset;
+}
+/* END Login page changes. */
+
+/* BEGIN Course enrollment button sizes. */
+.path-course-view .form-autocomplete-multiple>span.clickable,
+.path-course-view .form-autocomplete-multiple>.form-autocomplete-selection [data-active-selection=true] {
+  font-size: 1rem;
+  padding: 0.3rem;
+}
+/* BEGIN Course enrollment button sizes. */
+
+/* BEGIN Deal with buttons. */
+.theme-snap .button-group>button.default,
+.theme-snap .btn.btn-primary,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary,
+.theme-snap #mr-nav a.snap-login-button {
+  background-color: #461d7c;
+  color: #ffffff;
+  border-color: #3a1867;
+  outline: none;
+}
+
+.theme-snap .button-group>button.default:hover,
+.theme-snap .btn.btn-primary:hover,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:hover,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:hover,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:hover,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:hover,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:hover,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:hover,
+.theme-snap .button-group>button.default:focus,
+.theme-snap .btn.btn-primary:focus,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:focus,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:focus,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:focus,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:focus,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:focus,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:focus,
+.theme-snap #mr-nav a.snap-login-button:hover,
+.theme-snap #mr-nav a.snap-login-button:focus {
+  background-color: #3a1867;
+  color: #ffffff;
+  border-color: #2f1353;
+  transition: all 0.1s ease-in;
+  outline: none;
+}
+
+.theme-snap .button-group>button.default:active,
+.theme-snap .btn.btn-primary:active,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary:active,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary:active,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary:active,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary:active,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary:active,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary:active,
+.theme-snap .button-group>button.default.active,
+.theme-snap .btn.btn-primary.active,
+.theme-snap #page-grade-grading-manage .actions .action.btn-primary.active,
+#page-grade-grading-manage .actions .theme-snap .action.btn-primary.active,
+.theme-snap #rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel input.btn-primary.active,
+#rubric-rubric.gradingform_rubric #rubric-criteria .criterion .addlevel .theme-snap input.btn-primary.active,
+.theme-snap #rubric-rubric.gradingform_rubric .addcriterion.btn-primary.active,
+#rubric-rubric.gradingform_rubric .theme-snap .addcriterion.btn-primary.active,
+.theme-snap #mr-nav a.snap-login-button:active {
+  background-color: #2f1353;
+  color: #ffffff;
+  border-color: #000000;
+  transition: all 0.1s ease-in;
+  outline: none;
+}
+/* END Deal with buttons. */
+
+/* BEGIN Get rid of wrapping in breadcrumbs for long names. */
+#page-header  div.breadcrumb-nav {
+  margin-top: 0;
+  padding-right: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#page-header  div.breadcrumb-nav ol {
+  direction: rtl;
+  border: none;
+}
+#page-header  div.breadcrumb-nav li.breadcrumb-item {
+/*  display: inline; */
+  font-size: 1.25em;
+}
+/* END Get rid of wrapping in breadcrumbs for long names. */
+
+/* BEGIN Accessible active course links */
+  .nav-tabs .nav-link.active:not(:disabled):not(.disabled):active,
+  .nav-pills .nav-link.active:not(:disabled):not(.disabled):active,
+  .nav-tabs .nav-link.active:not(:disabled):not(.disabled).active,
+  .nav-pills .nav-link.active:not(:disabled):not(.disabled).active,
+  .show>.nav-tabs .nav-link.active.dropdown-toggle,
+  .show>.nav-pills .nav-link.active.dropdown-toggle {
+    color: #000000;
+    font-weight: 600;
+    pointer: cursor;
+    background-color: transparent;
+  }
+
+  .nav-pills .nav-link.active:not(:disabled):not(.disabled):hover {
+    color: #ffffff;
+  }
+
+  div.moodle-dialogue.filepicker .nav-pills .nav-link {
+    color: #000000 !important;
+  }
+
+  div.moodle-dialogue.filepicker .nav-pills .nav-link:hover {
+    color: #ffffff !important;
+    background-color: #461d7c;
+  }
+
+/* END Accessible active course links */
+
+
+
+/* BEGIN Shrink logo on small screens. */
+@media (max-width: 576px) {
+  #snap-home.logo, .snap-logo-sitename {
+    width: 50%;
+  }
+}
+
+@media (max-width: 1001px) {
+  #page-header {
+    padding-top: 4em;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .nav-tabs .nav-item, .nav-pills .nav-item {
+    text-align: left;
+  }
+
+  .path-admin div.settingsform div.row {
+    display: block;
+  }
+
+  .nav-tabs, .nav-pills {
+    background-color: transparent;
+  }
+
+  .nav-tabs .nav-link.active:not(:disabled):not(.disabled):active,
+  .nav-pills .nav-link.active:not(:disabled):not(.disabled):active,
+  .nav-tabs .nav-link.active:not(:disabled):not(.disabled).active,
+  .nav-pills .nav-link.active:not(:disabled):not(.disabled).active,
+  .show>.nav-tabs .nav-link.active.dropdown-toggle,
+  .show>.nav-pills .nav-link.active.dropdown-toggle {
+    color: #000000;
+    font-weight: 600;
+    pointer: cursor;
+    background-color: transparent;
+  }
+
+  .admin_colourpicker .currentcolour {
+    position: initial;
+  }
+}
+
+@media (min-width: 820px) {
+  .path-admin div.settingsform div.row {
+    flex-wrap: initial;
+  }
+}
+
+@media (max-width: 576px) {
+  #snap-home.logo, .snap-logo-sitename {
+    width: 50%;
+  }
+}
+/* END Shrink logo on small screens. */
+
+/* BEGIN Fix paste special. */
+form.atto_pastespecial_form div.atto_pastespecial_contenteditable.atto_pastespecial_preview {
+  clear: both;
+  margin-bottom: 2em;
+}
+
+form.atto_pastespecial_form div.atto_pastespecial_contenteditable.atto_pastespecial_handled { 
+  float: right;
+}
+
+div.atto_pastespecial_button {
+  
+}
+
+div.atto_pastespecial_button > br {
+  display: none;
+}
+
+div.atto_pastespecial_button > button {
+  margin: 0 1em 1em 0;
+}
+/* END Fix paste special. */
+
+/* BEGIN Max-width fixes. */
+.path-mod-assign .snap-form-required fieldset,
+.path-mod-hvp .snap-form-required fieldset,
+.path-grade .snap-form-required fieldset,
+.path-admin-report .snap-form-required fieldset,
+.pagelayout-admin .snap-form-required fieldset,
+#page-course-editsection .snap-form-required fieldset {
+  max-width: none;
+}
+
+#region-main, #region-main .course-content {
+  /* max-width: none; */
+}
+/* END Max-width fixes. */
+
+/* BEGIN Fix paragraph spacing issues. */
+.path-course-view .section .summary p {
+  margin-bottom: 1.5rem !important;
+}
+/* END Fix paragraph spacing issues. */
+
+/* BEGIN Border-radius changes. */
+#page-site-index #page-mast {
+  border-radius: 0.25em;
+}
+
+.section li.snap-asset {
+  border-radius: 0 0 0.25em 0.25em;
+}
+/* END Border-radius changes. */
+
+/* BEGIN Link / text behavior changes. */
+p.instancename {
+  font-weight: 500;
+}
+
+p a:link, .no-overflow a:link {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.no-overflow table a:link {
+  text-decoration: none;
+  font-weight: normal;
+}
+
+div.content a:hover {
+  text-decoration: underline;
+}
+
+p a:hover, .no-overflow a:hover {
+  text-decoration: none;
+  color: #ffa000 !important;
+  transition: all 0.1s ease-in;
+}
+
+.no-overflow table a:hover {
+  text-decoration: underline;
+  transition: all 0.1s ease-in;
+}
+
+
+#chapters .snap-visible-section a.chapter-title {
+  font-weight: bold;
+  color: #000000;
+}
+
+.block_tree a:link, #snap-footer-content a:link {
+  text-decoration: none;
+  font-weight: normal;
+}
+
+.block_tree .current_branch a:link {
+  font-weight: bold;
+  color: #000000;
+}
+
+.theme-snap .dropdown-menu>li>a:hover,
+.theme-snap .dropdown-menu>li>a:focus {
+  background-color: transparent;
+}
+/* END Link / text behavior changes. */
+
+/* BEGIN Move menu up a bit. */
+#page-content .block_settings.state-visible div.card-body {
+  margin-top: 0 !important;  
+}
+/* END Move menu up a bit. */
+
+/* BEGIN Firefox Fixes */
+.gecko #page-header div.breadcrumb-nav ol {
+  direction: ltr !important;
+}
+
+body.gecko .snap-form-required > fieldset,
+body.gecko .snap-form-advanced > fieldset {
+ display: block;
+}
+/* END Firefox Fixes */
+
+
+/* BEGIN Assignment review options fix */
+#page-mod-quiz-mod fieldset#id_reviewoptionshdr>legend.ftoggler>a.btn-link {
+  float: none;
+}
+
+#page-mod-quiz-mod fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+  float: right;
+  margin-top: -24px;
+  margin-right: -2em;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .form-inline {
+  margin-top: -1em;
+  margin-bottom: 2em;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .fitem {
+  width: 97%;
+  min-width: 200px;
+}
+
+#page-mod-quiz-mod div.review_option_item:last-of-type {
+  margin-top: .25em;
+}
+
+#page-mod-quiz-mod span.labelspacer {
+  padding-left: 0;
+}
+
+@media (max-width: 767.98px) {
+#page-mod-quiz-mod fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+  margin-top: -24px;
+}
+
+#page-mod-quiz-mod.device-type-mobile fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+  margin-top: -33px;
+}
+
+
+  #page-mod-quiz-mod span.labelspacer {
+    padding-left: 0.6em;
+  }
+
+  #page-mod-quiz-mod .form-check-input {
+    position: relative;
+  }
+
+  #page-mod-quiz-mod .form-check input[type="checkbox"] {
+    min-width: 20px;
+    max-width: 20px;
+  }
+}
+/* END Assignment review options fix */
+
+/* IFRAME STUFF */
+
+.pandivparent {
+  position: relative;
+  overflow: hidden;
+}
+
+.pandiv {
+  position: relative !important;
+  overflow: hidden !important;
+  width: 100% !important;
+}
+
+.paniframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* IFRAME STUFF */
+
+/* All courses + tabs */
+#snap-pm-courses .snap-personal-menu-more {
+  position: relative;
+}
+
+ul.nav-tabs li.tab {
+  border: 1px solid #ccc !important;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 0px !important;
+  background-image: linear-gradient(#f0f0f0, #fafafa);
+
+}
+/* All courses + tabs */
+
+#snap-pm-courses-Archives.tab-pane div {
+  background-size: 100% !important;
+}
+
+#qm-mform-compose select.custom-select {
+    width: auto !important;
+}
+
+#qm-mform-compose input.form-control {
+    width: 50%;
+}
+
+
+
+
+/* BEGIN 41 stuffs */
+body {
+  font-family: "Roboto","Source Sans Pro",Arial,sans-serif;
+  font-weight: 300;
+  height: unset;
+  background-attachment: fixed;
+  background-position: center bottom;
+  background-image: linear-gradient(
+    to bottom,
+    #ffffff,
+    #ffffff,
+    rgba(58,24,103, 0.0625)
+  );
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+h7,
+h8,
+h8,
+h9,
+h10 {
+  font-family: "Roboto","Source Sans Pro",Arial,sans-serif;
+  font-weight: 400;
+}
+
+label,
+.label,
+.form-label,
+.form-defaultinfo,
+.form-description,
+.form-filemanager,
+.ffilepicker,
+.ffilemanager,
+.fdescription,
+.fstatic,
+.collapsible-actions,
+input,
+button,
+select,
+.pagination,
+.initialbar,
+.paging,
+.alert,
+#page-admin-index .releasenoteslink,
+#page-admin-index .adminwarning,
+#page-admin-index .adminerror,
+.que .formulation,
+.que .outcome,
+.que .comment,
+.assignfeedback_editpdf_widget .label,
+.nav-pills,
+.nav-tabs,
+.course-report-dashboard,
+.yui3-tabview-list,
+.yuimenu,
+#course-category-listings,
+.progress .bar,
+.dndupload-progress-outer .bar,
+.progress-bar,
+.dndupload-progress-inner,
+.yui-dt-paginator {
+  font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 400;
+}
+
+#page-header h1,
+#page-header h2,
+#page-header h3,
+#page-header h4,
+#page-header h5,
+#page-header h6,
+#page-header h7,
+#page-header h8,
+#page-header h8,
+#page-header h9,
+#page-header h10 {
+  font-weight: 500 !important;
+}
+
+#snap-home.logo {
+  height: 50px;
+  margin-left: -3%;
+}
+
+.theme-snap #mr-nav #nav-notification-popover-container .icon.fa-bell-o:hover {
+  animation: ringingbell .2s infinite;
+}
+
+body:not(.pagelayout-course) {
+  background-color: #ffffff;
+}
+
+#page {
+  margin-top: 0;
+}
+
+body:not(.pagelayout-course) #page {
+  background-color: #ffffff;
+}
+
+body:not(.pagelayout-course) div#footer-snap-custom-menu {
+  margin-top: 1em;
+}
+
+#page-site-index.notloggedin #snap-pm-inner div.snap-pm-section div.snap-pm-content form div:nth-child(2) label:before {
+  content: "CE Moodle login:";
+  font-size: 1.5rem;
+  display: block;
+  font-family: "Roboto","Source Sans Pro",Arial,sans-serif;
+  font-weight: 300;
+  text-align: center;
+  clear: both;
+}
+
+.nav-tabs .nav-link.active:not(:disabled):not(.disabled):active,
+.nav-pills .nav-link.active:not(:disabled):not(.disabled):active,
+.nav-tabs .nav-link.active:not(:disabled):not(.disabled).active,
+.nav-pills .nav-link.active:not(:disabled):not(.disabled).active,
+.show>.nav-tabs .nav-link.active.dropdown-toggle,
+.show>.nav-pills .nav-link.active.dropdown-toggle {
+  color: #000000;
+  font-weight: 500;
+  pointer: cursor;
+  background-color: transparent;
+}
+
+p a:link, .no-overflow a:link {
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.no-overflow table a:link {
+  text-decoration: none;
+  font-weight: 300;
+}
+
+#chapters .snap-visible-section a.chapter-title {
+  font-weight: 500;
+  color: #000000;
+}
+
+.block_tree a:link, #snap-footer-content a:link {
+  text-decoration: none;
+  font-weight: 300;
+}
+
+.block_tree .current_branch a:link {
+  font-weight: 500;
+  color: #000000;
+}
+
+#page-mod-quiz-mod fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+  margin-top: 0.35em;
+  margin-right: unset;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .form-inline {
+  margin-top: unset;
+  margin-bottom: unset;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .fitem {
+  width: unset;
+  min-width: unset;
+}
+
+#page-mod-quiz-mod div.review_option_item:last-of-type {
+  margin-top: unset;
+}
+
+@media (max-width: 767.98px) {
+  #page-mod-quiz-mod fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+    margin-top: unset;
+  }
+
+  #page-mod-quiz-mod.device-type-mobile fieldset#id_reviewoptionshdr div.form-inline div.review_option_item a.btn-link {
+    margin-top: unset;
+  }
+}
+
+
+
+#page-header li a.mast-breadcrumb {
+  font-weight: 400 !important;
+}
+
+#snap-custom-menu-header {
+  display: none !important;
+}
+
+#snap-course-wrapper #course-toc #toc-mobile-menu-toggle {
+  background: #461d7c url('/theme/image.php/snap/theme/1683125786/burger') no-repeat 50% 50%;
+  background-size: 1em;
+}
+
+#snap-course-wrapper form.snap-dropzone {
+  margin-top: 0.5em;
+}
+
+button.search-icon {
+  margin: 0;
+}
+
+.activityiconcontainer.content .activityicon:not(.nofilter),
+.activityiconcontainer.content .icon:not(.nofilter) {
+  filter: none;
+}
+
+.activityiconcontainer.assessment .activityicon:not(.nofilter),
+.activityiconcontainer.assessment .icon:not(.nofilter) {
+  filter: none;
+}
+
+.section li.snap-activity.modtype_book .activityiconcontainer .activityicon,
+.section li.launch-tiles-standard.modtype_book .activityiconcontainer .activityicon,
+.section li.launch-tiles-module-modal.modtype_book .activityiconcontainer .activityicon,
+.section li.launch-tiles-resource-modal.modtype_book .activityiconcontainer .activityicon,
+.section li.activity-wrapper.modtype_book .activityiconcontainer .activityicon,
+.section li.snap-asset.modtype_book .activityiconcontainer .activityicon {
+}
+
+/* BEGIN Get rid of wrapping in breadcrumbs for long names. */
+#page-header  div.breadcrumb-nav {
+  margin-top: 0;
+  padding-right: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#page-header  div.breadcrumb-nav ol {
+  direction: unset;
+  border: none;
+}
+#page-header div.breadcrumb-nav li.breadcrumb-item {
+  display: inline-block;
+  font-size: 1.25em;
+}
+
+#page-header div.breadcrumb-nav li.breadcrumb-item {
+float: left;
+}
+
+/* END Get rid of wrapping in breadcrumbs for long names. */
+
+/* Filename in url resource */
+
+.fp-filename-icon .fp-filename {
+  font-size: medium;
+}
+
+#page-site-index #page-mast {
+width: auto;
+padding-right: 10em;
+}
+
+
+.iconhelp>img {
+ font-size: 10px !important;
+ font-weight: 200 !important;
+ height: 16px !important;
+ width: 16px !important;
+ background-color: #6c757d !important;
+ color: #3a1867 !important;
+ border: 4px solid #6c757d !important;
+ border-radius: 50% !important;
+ vertical-align: middle !important;
+ margin-bottom: 3px !important;
+}
+
+
+
+.iconhelp>img:hover {
+ font-size: 10px !important;
+ font-weight: 200 !important;
+ height: 16px !important;
+ width: 16px !important;
+ color: #fff !important;
+ background-color: #3a1867 !important;
+ border: 4px solid #3a1867 !important;
+ border-radius: 50% !important;
+ vertical-align: middle !important;
+ margin-bottom: 3px !important;
+}
+
+div.usermenu {
+ margin-top: -0.5rem;
+}
+
+.theme-snap #mr-nav #snap-pm-trigger {
+  margin-top: -0.5rem;
+}
+
+.path-grade-report .snap-page-heading-button {
+  display: block;
+  margin-bottom: 0;
+  justify-content: unset;
+  height: 3rem;
+}
+
+
+#snap-header .pull-right.js-only.row {
+  margin-top: unset;
+}
+
+#snap-header .hidden-xs-down {
+  font-weight: 500;
+}
+
+.path-grade-report-history div.snap-page-heading-button, 
+.path-grade-report-forecast div.snap-page-heading-button,
+.path-grade-report-grade_breakdown div.snap-page-heading-button,
+.path-grade-report-gradebook_builder div.snap-page-heading-button,
+.path-grade-report-outcomes div.snap-page-heading-button,
+.path-grade-report-overview div.snap-page-heading-button,
+.path-grade-report-summary div.snap-page-heading-button,
+.path-grade-report-user div.snap-page-heading-button,
+.path-grade-report-rubrics div.snap-page-heading-button {
+  display: none;
+}
+
+#coursesearchbox {
+  height: auto;
+}
+
+#coursetools-list li {
+  overflow-y: hidden;
+}
+
+#coursetools-list li img.iconlarge, #coursetools-list li img.iconlarge {
+  height: 2rem;
+  width: 2rem;
+}
+
+#page-course-search div.snap-page-heading-button {
+  display: none;
+}
+
+#page-site-index input#shortsearchbox {
+  box-sizing: unset;
+}
+
+#moodle-footer a {
+  font-weight: 500;
+}
+
+.snap_debug_hidden {
+  display: none;
+}
+
+body:not(.theme-snap) {
+  background-color: #ffffff;
+  background-attachment: unset;
+  background-position: unset;
+  background-image: unset;
+}
+
+#page-grade-report-grader-index tr.range.r0 th.range.c0 {
+  background-color: #ffffff;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades tr.heading td.c1 {
+    border-top: 1px solid #ddd!important;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades th.header.c0 {
+    border-left: 1px solid #ddd!important;
+    border-right: 0px solid #aaa!important;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades th.cell.topleft.c0 {
+    border-right: 1px solid #ddd!important;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades th.category.catlevel1 {
+    border-top: 1px solid #ddd!important;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades {
+    font-weight: 400;
+}
+
+.path-grade-report-grader .gradeparent table#user-grades td.grade.cat, .path-grade-report-grader .gradeparent table#user-grades td.grade.course {
+    font-weight: 700;
+}
+
+table {
+  font-family: "Roboto","Source Sans Pro",Arial,sans-serif;
+  font-weight: 300;
+}
+
+#page-admin-roles-define .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #fff;
+}
+
+#page-admin-roles-define tr.rolecapheading.header td {
+  background-color: rgba(0,0,0,.075);
+}
+
+#page-admin-roles-define tr.rolecapheading.header td.heading:before {
+  content("");
+  height: 1em;
+}
+
+
+#page-admin-roles-define tr.rolecap td {
+}
+
+#page-admin-roles-define tr.rolecap th, #page-admin-roles-define tr.rolecap {
+  padding-bottom: 1.5em !important;
+  border-bottom: 1px solid rgba(0,0,0,.075);
+}
+
+#page-admin-roles-define tr:hover:not(.rolecapheading.header) {
+  color: #565656;
+  background-color: rgba(0,0,0,.075) !important;
+}
+
+#page-admin-roles-define td:not(.capdefault):has(> label > input[type=radio]:checked) {
+  background-color: rgba(255,0,0,.2);
+}
+#page-admin-roles-define tr.rolecapheading.header td.header strong {
+  font-weight: 700;
+}
+
+#page-admin-roles-define tr td.risk img.icon, #page-admin-roles-define tr td.risk i.icon {
+  width: 1em;
+  height: 1em;
+  font-size: 1.25em;
+}
+
+#page-admin-roles-allow table tr .c0 {
+  font-weight: 500;
+}
+
+#page-admin-roles-allow table tr td.c1 {
+  margin-left: 10em;
+}
+
+.path-grade-report-customgrader .gradeparent table#user-grades tr.odd td.cell.overridden,
+.path-grade-report-customgrader .gradeparent table#user-grades tr.odd td.cell.ajaxoverridden,
+.path-grade-report-grader .gradeparent table#user-grades tr.odd td.cell.overridden,
+.path-grade-report-grader .gradeparent table#user-grades tr.odd td.cell.ajaxoverridden {
+  background-color: rgba(239, 217, 164, 0.3);
+}
+
+.path-grade-report-grader .gradeparent tr:nth-child(n) td.overridden:nth-child(n) {
+  background-color: rgba(239, 217, 164, 0.1);
+
+}
+
+/*
+.path-grade-report-customgrader .gradeparent table#user-grades tr.odd td.cell.overridden span.gradevalue::before,
+.path-grade-report-customgrader .gradeparent table#user-grades tr.odd td.cell.ajaxoverridden span.gradevalue:: before,
+.path-grade-report-grader .gradeparent table#user-grades tr.odd td.cell.overridden span.gradevalue:: before,
+.path-grade-report-grader .gradeparent table#user-grades tr.odd td.cell.ajaxoverridden span.gradevalue:: before {
+  padding-right: 0.5em;
+  font-size: 0.75em;
+  content: "overridden";
+  vertical-align: text-top;
+}
+*/
+
+.path-grade-report-grader .gradeparent .excludedfloater {
+  font-size: 0.75em;
+  float: none;
+  font-weight: 500;
+  padding-right: 0.5em;
+  color: #AA0000;
+  vertical-align: text-top;
+}
+/*
+FAILURES
+.path-grade-report-grader .gradeparent tr .cell,
+.path-grade-report-grader .gradeparent .floater .cell {
+  background-color: transparent;
+}
+
+.path-grade-report-grader .gradeparent .userrow.odd .cell,
+.path-grade-report-grader .gradeparent .floater .cell.odd,
+.path-grade-report-grader .gradeparent .heading .cell,
+.path-grade-report-grader .gradeparent .cell.category,
+.path-grade-report-grader .gradeparent .avg .cell  {
+  background-color: transparent;
+}
+
+#page-grade-report-grader-index tr.userrow.odd {
+  background-color: #eeeeee;
+
+}
+#page-grade-report-grader-index tr.userrow.even {
+  background-color: #ffffff;
+}
+
+
+#page-grade-report-grader-index tr.userrow.odd:hover .cell,
+#page-grade-report-grader-index tr.userrow.even:hover .cell {
+  background-color: #dddddd;
+}
+*/
+
+.path-grade-report-customgrader .gradeparent table#user-grades tr.odd td.cell,
+.path-grade-report-grader .gradeparent table#user-grades tr.odd td.cell,
+.path-grade-report-grader .gradeparent .userrow.odd .cell,
+.path-grade-report-grader .gradeparent .floater .cell.odd,
+.path-grade-report-grader .gradeparent .cell.category {
+  background-color: #eff0f1;
+}
+
+.path-grade-report-grader .gradeparent .heading .cell {
+  background-color: #ffffff;
+  color: #3a1867;
+}
+
+.userloggedinas .usermenu .userbutton .avatars .avatar img {
+  width: inherit !important;
+  height: inherit !important;
+}
+
+#page-my-index #region-main, #page-my-index #moodle-blocks {
+  max-width: unset;
+  margin-left: 3.25%;
+  margin-right: 3.25%;
+}
+
+#page-my-index .snap-page-heading-button {
+  margin-left: 1em;
+}
+
+#page-my-index .mb-1 .form-inline {
+  margin-top: 0.45em;
+}
+
+.block-myoverview .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
+  width: calc(25.00% - 30.6px);
+  min-width: 180px;
+  border: 1px solid #3a1867;
+  border-radius: 5px 5px 0 0;
+}
+
+#page-my-index .dashboard-card-deck .dashboard-card>a {
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 4.5px 4.5px 0 0;
+  overflow: hidden;
+}
+
+.cc_quick_link {
+  border-radius: 4.5px 0 4.5px 0 !important;
+  top: 0px !important;
+  left: 0px !important;
+}
+
+.coursecard {
+  border-radius: 6.5px 6.5px 0 0;
+}
+
+#page-my-index .block-myoverview .card.dashboard-card,
+#page-my-index .block_recentlyaccessedcourses .card.dashboard-card {
+  transition: all 0.4s ease-in-out;
+}
+
+#page-my-index .block_recentlyaccessedcourses .card {
+  border: 1px solid #3a1867;
+  border-radius: 5px 5px 0 0;
+  overflow: hidden;
+  margin-top: 1em;
+}
+
+#page-my-index .block-myoverview .card.dashboard-card:hover,
+#page-my-index .block_recentlyaccessedcourses .card.dashboard-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 17px 0 #6c757d,0 6px 20px 0 rgba(0,0,0,.19);
+}
+
+@media screen and (max-width: 785px) {
+  .block-myoverview .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card,
+  .block-myoverview .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
+    width: calc(50.00% - 30.6px);
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .block-myoverview .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card,
+  .block-myoverview .dashboard-card-deck:not(.fixed-width-cards) .dashboard-card {
+    width: calc(100.00% - 5.1px);
+  }
+}
+
+#page-my-index .list-group-item {
+  border: 1px solid rgba(58,24,103, 0.25);
+}
+
+#page-my-index td.day {
+  border: 1px solid rgba(58,24,103, 0.075);
+}
+
+#page-my-index .block-myoverview .list-group-item:hover {
+  background-color: rgba(237, 237, 237, 1);
+  background-image: linear-gradient(to right, white, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, #ededed, white);
+
+}
+
+#page-my-index #region-main section.block.card,
+#page-my-index #moodle-blocks section.block.card {
+  border: 1px solid #3a1867;
+  border-radius: 5px;
+}
+
+#page-my-index .block_recentlyaccessedcourses .paging-bar-container {
+  border-bottom: 1px solid #3a1867;
+}
+
+#page-my-index .block_recentlyaccessedcourses .paging-bar-container ul.pagination a.page-link {
+  border: none;
+}
+
+#page-my-index .block_recentlyaccessedcourses .paging-bar-container ul.pagination li.disabled a.page-link i.icon {
+  color: #ffffff;
+}
+
+#page-my-index .block_recentlyaccessedcourses .paging-bar-container ul.pagination a.page-link:hover,
+#page-my-index .block_recentlyaccessedcourses .paging-bar-container ul.pagination a.page-link:hover i.icon {
+  color: #3a1867;
+  background-color: transparent;
+}
+
+#page-my-index .block_recentlyaccessedcourses .dashboard-card-deck.one-row {
+  overflow: visible !important;
+}
+
+section.block_settings.state-visible div.footer {
+  padding-bottom: 1em;
+}
+
+.theme-snap #mr-nav .carousel a {
+  transition: all 0.2s ease-in-out;
+}
+.theme-snap #mr-nav .carousel-inner a:hover,
+.theme-snap #mr-nav .carousel-inner a:focus {
+  color: #ffffff;
+  background-color: #3a1867;
+}
+
+#region-main {
+  background-color: transparent;
+}
+
+.snap-dropzone .snap-dropzone-label, .snap-modchooser .section-modchooser-link {
+  background-color: #ffffff;
+}
+
+.path-course li.snap-asset {
+  border: 1px solid #dee2e6;
+  border-top: .3em solid #3a87aa !important;
+}
+
+.section .activity.modtype_label.label {
+  width: unset;
+  padding: 0em 1em;
+  margin: 1em 1%;
+  border: 1px solid #dee2e6 !important;
+  border-top: .3em solid #fdd023 !important;
+}
+
+.section .activity.modtype_page.page {
+  width: unset;
+  padding-left: 1em;
+  padding-top: 1em;
+  padding-right: 1em;
+  margin: 1em 1%;
+  border: 1px solid #dee2e6 !important;
+  border-top: .3em solid #461d7c !important;
+}
+
+li:focus-visible,
+a.dropdown-toggle:focus-visible,
+li:focus,
+a.dropdown-toggle:focus {
+  outline-color: #471d7c !important;
+  outline-style: none !important;
+  outline-width: 0px !important;
+  outline: 0 !important;
+  box-shadow: unset !important;
+}
+
+#page-admin-roles-manage th.lastcol, 
+#page-admin-roles-manage td.lastcol {
+  min-width: 10em;
+}
+
+.section li.snap-asset.modtype_flashcard .activityiconcontainer,
+.section li.snap-asset.modtype_customcert .activityiconcontainer,
+.section li.snap-asset.modtype_turnitintooltwo .activityiconcontainer,
+.section li.snap-asset.modtype_board .activityiconcontainer {
+  background-color: #461d7c;
+}
+
+.section li.snap-asset.modtype_lti .activityiconcontainer {
+  background-color: #ffffff !important;
+  border: 2px solid #461d7c !important;
+}
+
+.section li.snap-asset.modtype_lti .activityinstance .snap-asset-link a .activityicon,
+.section li.snap-asset.modtype_lti .activityinstance .snap-asset-link a .activityicon {
+  transform: scale(1.25);
+}
+
+.section li.snap-asset.modtype_lti .activityinstance .snap-asset-link a:hover .activityicon,
+.section li.snap-asset.modtype_lti .activityinstance .snap-asset-link a:focus .activityicon {
+  transform: scale(1.5);
+}
+
+.section li.snap-asset.modtype_flashcard .activityiconcontainer,
+.section li.snap-asset.modtype_customcert .activityiconcontainer,
+.section li.snap-asset.modtype_turnitintooltwo .activityiconcontainer,
+.section li.snap-asset.modtype_board .activityiconcontainer {
+  border-radius: 4px;
+}
+
+.modal-dialog.modchooser div.modicon_lti>img.icon.activityicon {
+  box-shadow: inset 0 0 0 2px #461d7c;
+  border-radius: 4px;
+}
+
+.section li.snap-asset.modtype_url .activityiconcontainer {
+  background-color: #999999;
+}
+
+.theme-snap .modchoosercontainer a .activityiconcontainer img.activityicon {
+  transition: all .1s ease-in-out;
+}
+
+.theme-snap .modchoosercontainer a:hover .activityiconcontainer img.activityicon {
+  transform: scale(1.25);
+}
+
+#page-mod-quiz-mod fieldset#id_reviewoptionshdr div.form-inline div.review_option_item:hover {
+  background-color: #fff;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .review_option_item {
+  width: 100%;
+  height: unset;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr div.fitem, #page-mod-quiz-mod #id_reviewoptionshdr div.review_option_item {
+  width: 100%;
+  margin-left: 0;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .form-check {
+  display: unset;
+  vertical-align: unset;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr label.fitem {
+  float: unset;
+  width: unset;
+  clear: unset;
+  vertical-align: sub;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr .btn-link {
+  float: right;
+  display: unset !important;
+  line-height: 0 !important
+  vertical-align: unset !important;
+}
+
+#page-mod-quiz-mod .snap-form-advanced #id_reviewoptionshdrcontainer fieldset .d-flex {
+  line-height: 0;
+  margin-top: 0.5em;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdr div.fitem div.felement div.review_option_item {
+  line-height: 1.5em;
+  height: 2.5em;
+}
+
+#page-mod-quiz-mod #id_reviewoptionshdrcontainer label.col-form-label {
+  font-weight: 400;
+}
+
+#page-admin-setting-modsettingquiz div.form-setting>div.group>span {
+  display: block;
+}
+
+.path-grade-report-grader .dimmed_text {
+  color: #552222 !important;
+  font-weight: 300 !important;
+}
+
+.path-grade-report-grader .gradepass, .path-grade-report-user .gradepass {
+  color: #006100;
+}
+
+.path-grade-report-grader .gradefail, .path-grade-report-user .gradefail {
+  color: #AA0000;
+}
+
+.path-grade-report-grader i.text-success {
+  color: #006100 !important;
+}
+
+.path-grade-report-grader i.text-danger {
+  color: #AA0000 !important;
+}
+
+#page-mod-assign-mod #id_submissiontypescontainer ul li {
+  font-size: 10px;
+  line-height: 1.25em;
+}
+
+#page-admin-purgecaches #notice, #notice.snap-continue-cancel {
+  min-height: unset;
+  position: unset;
+  margin-top: unset;
+}
+
+#page-mod-turnitintooltwo-mod div#id_partdates1container {
+  padding: 0.5em 0.5em 0 0.5em;
+}
+
+#page-mod-forum-discuss div.ml-2 .movediscussionoption .urlselect input.ml-1 {
+  margin-top: 0;
+}
+
+#page-mod-forum-discuss div.ml-2 {
+  padding-top: 0.45em;
+}
+
+#page-mod-forum-discuss form.form-inline {
+  align-items: initial;
+}
+
+#region-main, #page-mod-page-view #region-main {
+  max-width: unset;
+}
+
+page-mod-journal-report, .toast-wrapper .toast-info, #page-mod-forum-view .toast-wrapper .toast-info {
+  background-color: #66FF66;
+  color: #000000;
+  font-weight: 400;
+}
+
+page-mod-journal-report, .toast-wrapper .toast-warning, #page-mod-forum-view .toast-wrapper .toast-warning {
+  background-color: #dc3545;
+  color: #FFFFFF;
+}
+
+#page-mod-forum-view .navitem a.btn-primary {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+#page-mod-quiz-review .que.essay .qtype_essay_response.readonly {
+  background-color: #e9ecef;
+}
+
+
+.course-content, #page-mod-page-view #region-main {
+  max-width: none;
+}
+
+#page-login-index .snap-login, #page-login-signup .snap-login {
+  min-width: 30rem;
+}
+
+#page-site-index ul.section li.snap-resource {
+  margin-bottom: 1em !important;
+}
+
+#page-admin-user-profile-index .categorieslist td, #page-admin-user-profile-index .categorieslist th {
+  width: unset !important;
+}
+
+.theme-snap ul#coursetools-list li {
+  border-radius: 0.5em;
+}
+
+.theme-snap #coursetools-list li:hover,
+.theme-snap #coursetools-list li:focus {
+  background-color: #e9ecef;
+}
+
+.theme-snap #coursetools-list li:hover a,
+.theme-snap #coursetools-list li:focus a {
+  color: #000000;
+}
+
+.section li.snap-asset {
+  font-family: unset;
+}
+
+.modtype_book .asset-wrapper .snap-asset-content .summary-text.row p,
+.modtype_book .asset-wrapper .snap-asset-content #course-category-listings.summary-text p {
+  font-size: 1em !important;
+  line-height: 1.64rem !important;
+  margin: 0.5em 0 !important;
+  margin-bottom: 1.5em !important;
+}
+
+#page-admin-user #form-advanced-div div.form-group.advanced.show {
+  display: grid !important;
+  margin-bottom: 1em;
+  padding: .5em;
+}
+
+#page-admin-user #form-advanced-div div.form-group.advanced.show:hover {
+  background-color: #eeeeee;
+}
+
+#page-admin-user #form-advanced-div div.form-group.advanced.show>div>span.text-nowrap {
+  float: right;
+}
+
+/* END 41 stuffs */
+
+/* Mod - Book: change chapters width */
+#page-mod-book-view div#moodle-blocks {
+    width: 30% !important;
+}
+#page-mod-book-view section#region-main {
+    width: 70% !important;
+}
+/* END Mod - Book: change chapters width */
+
+/* Begin close black answers */
+fieldset.answer .text-body {
+  color: unset !important;
+}
+
+/* BEGIN cookies warning */
+.eupopup-container {
+  background-color: #fee891 !important;
+}
+
+.eupopup-container .eupopup-body {
+  color: #333333 !important;
+  font-weight: 400;
+  line-height: 1.5em;
+}
+
+.eupopup-container .eupopup-body ul {
+  margin-top: 1em;
+}
+
+.eupopup-container .eupopup-body a,
+.eupopup-container .eupopup-button {
+  color: #3a1867 !important;
+  text-transform: uppercase;
+  text-decoration: underline;
+}
+
+.eupopup-container .eupopup-body ul li a,
+.eupopup-container .eupopup-button {
+  font-weight: 600 !important;
+  padding: .5em .75em;
+  border: 1px solid #000;
+  border-radius: 3px;
+  background-color: #fff !important;
+  text-decoration: none !important;
+}
+
+.eupopup-container .eupopup-body ul li a:hover,
+.eupopup-container .eupopup-button:hover {
+  background-color: #461d7c !important;
+  color: #fff !important;
+  text-decoration: underline !important;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+
+.eupopup-container .eupopup-buttons {
+  margin: 1em;
+}
+
+.eupopup-container .eupopup-body ul li a:active,
+.eupopup-container .eupopup-button:active {
+  background-color: #000 !important;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+/* END cookies warning */
+
+/* BEGIN Course Completion Checkboxes */
+
+#page-course-completion .fcontainer input[type="checkbox"] {
+  opacity: unset !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #fff;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #666;
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+#page-course-completion .fcontainer input[type="checkbox"]:checked::before {
+  opacity: unset !important;
+  content: '\2713';
+  font-weight: 600;
+  background-color: #059142;
+  color: #ffffff;
+  font-size: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  line-height: 10px;
+}
+
+#page-course-completion .fcontainer input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: .5 !important;
+}
+
+/* END Course Completion Checkboxes */
+
+/* BEGIN blocks icon disable for dashboard */
+#page-my-index .blocks-drawer-button {
+  display: none;
+}
+/* END blocks icon disable for dashboard */
+
+/* BEGIN Editing in courses fix */
+.path-course-view:not(.editing) .section li.snap-asset .activityinstance .snap-header-card-icons .snap-asset-actions {
+ display: none !important;
+}
+.path-course-view:not(.editing) .section li.snap-asset .activityinstance .snap-header-card-icons .snap-groups-mode-actions {
+ display: none !important;
+}
+.path-course-view:not(.editing) .snap-modchooser {
+ display: none !important;
+}
+.path-course-view:not(.editing) .snap-dropzone {
+ display: none !important;
+}
+.path-course-view:not(.editing) #snap-new-section {
+ display: none !important;
+}
+.path-course-view:not(.editing) a#edit-summary {
+ display: none !important;
+}
+.path-course-view:not(.editing) a.edit-summary {
+ display: none !important;
+}
+.path-course-view:not(.editing) .snap-section-editing {
+ display: none !important;
+}
+/* END Editing in courses fix */
+
+/* BEGIN menu jumpy fix */
+#course-toc #chapters .chapter-title {
+ margin-bottom: 0;
+}
+#course-toc #chapters h3 {
+ margin: 0;
+}
+/* END menu jumpy fix */
+
+/* BEGIN dealing with highlighted visible sections. */
+#course-toc li.snap-visible-section {
+ padding-left: 0;
+ margin-left: -0.4em !important;
+}
+#course-toc li.snap-visible-section > span.completionstatus {
+ margin-left: 0.4em;
+}
+
+#course-toc li.snap-visible-section > a {
+ color: white !important;
+}
+
+/* END dealing with highlighted visible sections. */
+
+
+/* Begin menu bar right card colors and border */
+.drawer.drawer-right .card,
+ #snap_feeds_side_menu .snap-feeds section {
+  border-radius: 0.5rem 0 0 0.5rem;
+  border: 1px solid #3a1867 !important;
+}
+
+#page-content .block_settings,
+.drawer.drawer-right,
+.message-app,
+#snap_feeds_side_menu {
+  background-color: #EEEEEE !important;
+  border-left: 1px solid #3a1867;
+  box-shadow: 0 40px 15px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+#mr-nav {
+  background-color: #ffffff !important;
+}
+
+/*
+#snap_feeds_side_menu .snap-feeds section {
+  margin: 1rem 0.5rem;
+}
+*/
+/* End menu bar right card colors and border */
+
+/* Begin Page Header */
+#page-header {
+ padding-top: 5em;
+}
+/* END Page Header */
+/* My courses button */
+#mr-nav #snap-my-courses-trigger {
+  background-color: transparent;
+  padding-top: 0;
+}
+/* My courses button */
+/* Header spacing */
+#snap-header .pull-right.js-only.row, #snap-header .pull-right.js-only#course-category-listings, #snap-header .float-end.js-only.row, #snap-header .float-end.js-only#course-category-listings {
+  margin-top: 0.4em;
+}
+/* Header spacing */
+
+/* BEGIN 4.5.3 - Snap Modal Window adjustments */
+.modal-content {
+    max-width: 100% !important;
+    margin: 0px;
+    text-align: left;
+}
+
+.chooserdialogue-mod_quiz-questionchooser {
+    min-width: 50% !important;
+}
+/* END 4.5.3 - Snap Modal Window adjustments */
+
+/* BEGIN - 4.5.3 - H5P Black icon fix and other icon fixes */
+.theme-snap .modchoosercontainer div[data-internal="hvp"] .modicon_hvp .activityicon {
+    filter: brightness(100%) contrast(100%) !important;
+}
+
+.section li.snap-asset.modtype_flashcard .activityiconcontainer,
+.section li.snap-asset.modtype_customcert .activityiconcontainer, 
+.section li.snap-asset.modtype_turnitintooltwo .activityiconcontainer, 
+.section li.snap-asset.modtype_board .activityiconcontainer,
+.section li.snap-asset.modtype_url .activityiconcontainer {
+    background-color: white;
+}
+
+.section li.snap-asset.modtype_url .activityiconcontainer {
+    filter: invert(0%) sepia(0%) saturate(0%) hue-rotate(156deg) brightness(100%) contrast(100%) !important;
+}
+/* END - 4.5.3 - H5P Black icon fix and other icon fixes */
+
+
+/* BEGIN - 4.5.3 - Board fix on course main page in sections */
+.section li.snap-activity.modtype_book div.summary-text div.content-row {
+    padding-left: 1em;
+    padding-top: 0em !important;
+    padding-bottom: 0em !important;
+}
+
+.section li.snap-activity.modtype_book div.summary-text div.no-overflow {
+    padding: 0em !important;
+}
+/* END - 4.5.3 - Board fix on course main page in sections */
+
+/* BEGIN - 4.5.3 - Book fix on course main page in sections */
+.section li.snap-activity.modtype_book div.summary-text div.content-row {
+    padding-left: 1em;
+    padding-top: 0em !important;
+    padding-bottom: 0em !important;
+}
+
+.section li.snap-activity.modtype_book div.summary-text div.no-overflow {
+    padding: 0em !important;
+}
+/* END - 4.5.3 - Book fix on course main page in sections */
+
+/* BEGIN - 4.5.3 - Quiz Navigation SNAP fix */
+#page-mod-quiz-attempt.theme-snap #mod_quiz_navblock {
+    align-items: left !important;
+    text-align: left !important;
+}
+/* END - 4.5.3 - Quiz Navigation SNAP fix */
+
+/* BEGIN - 4.5.3 - Mod - Book: Adjusted border width and padding */
+#page-mod-book-view section#region-main {
+  width: 70% !important;
+  float: right;
+  padding: 0 2em 0 2em;
+}
+
+#page-mod-book-view div#moodle-blocks {
+  width: 30% !important;
+  float: left;
+  clear: none;
+  padding: 0 1em 0 0;
+  margin-left: 0;
+}
+/* END - 4.5.3 - Mod - Book: Adjusted border width and padding */
+
+/* BEGIN - Questionnaire stupidity */
+#page-mod-questionnaire-questions div#fgroup_id_manageqgroup input {
+  height: 0.8em !important;
+}
+/* END - Questionnaire stupidity */
+
+/* BEGIN - Snap Fix to move ally buttons  */
+li.snap-asset .filter-ally-wrapper.ally-anchor-wrapper .ally-actions.ally-actions-tile {
+    position: absolute !important;
+    right: 20px !important;
+    top: 59px !important;
+}
+li.snap-asset .filter-ally-wrapper.ally-anchor-wrapper .ally-actions.ally-actions-tile .ally-download {
+    margin-left: 14px !important;
+}
+/* END - Snap Fix to move ally buttons  */
+
+/* BEGIN - Rubric fix  */
+table#rubric-criteria tr.criterion.first.even td.description {
+    width: 25% !important;
+}
+/* END - Rubric fix  */
+/* BEGIN - Config reports table fix  */
+#page-blocks-configurable_reports-viewreport .generaltable {
+    overflow: auto;
+    width: 100%;
+    display: table !important;
+}
+/* END - Config reports table fix  */
+
+
+
+/* BEGIN stupid black icon fix */
+.section li.snap-activity.modtype_hvp .activityiconcontainer, .section li.launch-tiles-standard.modtype_hvp .activityiconcontainer, .section li.launch-tiles-module-modal.modtype_hvp .activityiconcontainer, .section li.launch-tiles-resource-modal.modtype_hvp .activityiconcontainer, .section li.launch-tiles-url-modal.modtype_hvp .activityiconcontainer, .section li.activity-wrapper.modtype_hvp .activityiconcontainer, .section li.snap-asset.modtype_hvp .activityiconcontainer {
+  filter: none;
+}
+/* END stupid black icon fix */
+
+/* BEGIN Snap fix for customcert icon funkiness */
+.section li.snap-asset .activityiconcontainer.customcert img.activityicon {
+    filter: invert(26%) sepia(32%) saturate(4543%) hue-rotate(274deg) brightness(86%) contrast(89%);
+}
+
+li.snap-asset.modtype_customcert .activityiconcontainer {
+    filter: none !important
+}
+/* END Snap fix for customcert icon funkiness */
+/* BEGIN Snap fix for external border on icon */
+.section li.snap-asset.modtype_lti .activityiconcontainer {
+    border: none !important;
+}
+/* END Snap fix for external border on icon */
+
+
+/* BEGIN Grading navitem Snap Fix */
+#page-mod-assign-grading .tertiary-navigation .navitem {
+    display: flex;
+    margin-bottom: 25px;
+}
+#page-mod-assign-grading .tertiary-navigation .navitem:not(:last-child) {
+    margin-right: 20px !important;
+}
+
+#page-mod-assign-grading .tertiary-navigation .navitem-divider:not(:last-child) {
+    margin-right: 20px !important;
+}
+#page-mod-assign-grading .tertiary-navigation .navitem-divider {
+    width: 1px;
+    background-color: #dee2e6;
+    margin-bottom: 25px;
+}
+/* END Grading navitem Snap Fix */
+
+/* BEGIN Snap enroll user button fix */
+#page-course-view-participants .singlebutton.enrolusersbutton.enrol_manual_plugin {
+	margin-left: 10px;
+}
+/* END Snap enroll user button fix */
+
+/* BEGIN Snap margin fix for page layouts that are layout-incourse */
+#page-course-view-topics.layout-incourse #region-main, #page-course-view-weeks.layout-incourse #region-main {
+    padding: 1em 4%;
+}
+/* END Snap margin fix for page layouts that are layout-incourse */
+
+/* BEGIN front page responsive left border */
+.lsu_fp_border {
+    border-left: 3em solid #461d7c !important;
+}
+
+.lsu_fp_border_alert {
+    border-left: 3em solid #ff0000 !important;
+}
+
+.lsu_fp_border, .lsu_fp_border_alert {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    padding-left: 1em;
+}
+
+@media screen and (max-width: 500px) {
+  .lsu_fp_border,
+  .lsu_fp_border_alert {
+    border-left: 0em solid #000000 !important;
+  }
+}
+/* END front page responsive left border */
