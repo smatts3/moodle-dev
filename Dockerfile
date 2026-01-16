@@ -7,7 +7,7 @@ RUN apt update && apt install git -y
 RUN su -g www-data -c "git clone --branch develop --single-branch https://github.com/lsuonline/lsuce-moodle.git /var/www/html/"
 
 # Install dependencies
-RUN apt-get install -y \
+RUN apt-get install -y --fix-missing \
 		libpng-dev \
 		libonig-dev \
 		libjpeg-dev \
@@ -29,18 +29,24 @@ RUN apt-get install -y \
 
 # Copy over configs
 COPY --chown=www-data:www-data config/php.ini /usr/local/etc/php/php.ini
-# COPY --chown=www-data:www-data config/config.php /var/www/html/config.php
-# COPY --chmod=0777 config/install.sh /install.sh
 
 # Tweaky stuff && set permissions
 RUN git config --global --add safe.directory /var/www/html && \
-# chown www-data:www-data /var/www/html/config.php && \
-	# chmod 755 /var/www/html/config.php && \
+	git config pull.ff only && \
+	git config pull.rebase true && \
 	chown www-data:www-data /usr/local/etc/php/php.ini && \
 	chmod 755 /usr/local/etc/php/php.ini && \
 	mkdir -p /var/www/moodledata/storage && \ 
-	chown -R www-data:www-data /var/www/moodledata
-
+	chown -R www-data:www-data /var/www/moodledata && \
+	echo 'enrol/workdaystudent/\nblocks/wdsprefs/' >> /var/www/html/.git/info/exclude && \
+	git -C /var/www/html ls-files enrol/workdaystudent blocks/wdsprefs | xargs git -C /var/www/html update-index --skip-worktree && \
+	rm -rf /var/www/html/enrol/workdaystudent /var/www/html/blocks/wdsprefs && \
+	git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git /var/www/html/enrol/workdaystudent && \
+	git clone https://github.com/lsuonline/moodle-block_wdsprefs.git /var/www/html/blocks/wdsprefs && \
+	git config --global alias.co checkout && \
+	git config --global alias.br branch && \
+	git config --global alias.ci commit && \
+	git config --global alias.st status
 #Install VSCode extensions
 CMD ["apache2-foreground"]
 #http://localhost:63942/admin/index.php?cache=0&agreelicense=1&confirmrelease=1&lang=en
