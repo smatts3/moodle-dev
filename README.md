@@ -1,9 +1,4 @@
-Put confidential config settings into ./confidential in the format `COMPONENT`|`NAME`|`VALUE`. One per line. For example:
-
-```
-enrol_workdaystudent|username|WORKDAY_USERNAME
-enrol_workdaystudent|password|WORKDAY_PASSWORD
-```
+Put confidential config settings into ./confidential in the format `COMPONENT`|`NAME`|`VALUE`. One per line. See `confidential.template` for examples.
 
 To launch a new instance of a dev environment run, specifying an optional project name:
 
