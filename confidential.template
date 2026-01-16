@@ -1,0 +1,10 @@
+# Example confidential configuration values for use with new.sh
+# Format: COMPONENT|NAME|VALUE
+
+# Core (no component) config value example:
+-|mail_smtpuser|your-smtp-username
+-|mail_smtppass|your-smtp-password
+
+# Workdaystudent examples:
+enrol_workdaystudent|username|WORKDAY_USERNAME_EXAMPLE
+enrol_workdaystudent|password|WORKDAY_PASSWORD_EXAMPLE
