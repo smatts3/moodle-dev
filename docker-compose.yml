@@ -12,8 +12,6 @@ services:
       interval: 1s
       timeout: 1s
       retries: 10
-    # networks:
-    #   - internal
 
   web:
     image: lsuonline/moodle-dev:latest
@@ -37,9 +35,6 @@ services:
       - traefik.http.routers.${BRANCH_NAME}.middlewares=moodle-headers
       - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Host={host}
       - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Proto=https
-    # networks:
-    #   - traefik
-    #   - internal
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -52,16 +47,3 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpassword
     restart: always
-    # labels:
-    #   - traefik.enable=true
-    #   - traefik.http.routers.phpmyadmin-${BRANCH_NAME}.entrypoints=web
-    #   - traefik.http.services.phpmyadmin-${BRANCH_NAME}.loadbalancer.server.port=80
-    #   - traefik.http.routers.phpmyadmin-${BRANCH_NAME}.rule=Host(`phpmyadmin.${BRANCH_NAME}.localhost`)
-    # networks:
-    #   - traefik
-    #   - internal
-
-# networks:
-#   traefik:
-#     external: true
-#   internal:

@@ -25,12 +25,35 @@ function spinner() {
     done
     tput cnorm
     wait $pid
-    cursorBack
-    echo -en "\r\n"
+    cursorBack 1
+    echo " "
 
     return $?
 }
 
+# Set a Moodle config value via CLI
+# Usage: set_config [component] name value
+#   - If component is empty or "-", sets a core config
+set_config() {
+    local component="$1"
+    local name="$2"
+    local value="$3"
+    
+    echo -n "Setting config: $component | $name | $value "
+    
+    if [ -z "$component" ] || [ "$component" = "-" ]; then
+        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+            --name="$name" \
+            --set="$value" \
+            & spinner $!
+    else
+        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+            --component="$component" \
+            --name="$name" \
+            --set="$value" \
+            & spinner $!
+    fi
+}
 
 SKIP_INSTALL=false
 NAME=""
@@ -66,6 +89,9 @@ fi
 
 
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
+
+# Update the container with the latest code
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git pull --autostash origin develop
 
 #Figure out what port docker mapped to localhost
 PORT=$(docker port "${NAME}-web-1" 80 | head -n1 | sed 's/.*://' | tr -d '\r')
@@ -123,61 +149,72 @@ if [ "$SKIP_INSTALL" = false ]; then
 
     echo -e "\nInstallation complete!"
 else
-    echo "Skipping Moodle installation (--skip flag provided)."
+    echo "Skipping Moodle installation \(--skip flag provided\)."
 fi
 
-echo "Setting up theme..."
+# Set misc config values (component|name|value format, use - for core settings)
+echo "Setting up theme and config..."
+while IFS='|' read -r component name value; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    set_config "$component" "$name" "$value"
+done <<'EOF'
+-|bccaddress|${CFG_SUPPORTEMAIL}
+-|theme|snap
+theme_snap|themecolor|#461d7c
+theme_snap|fullname|Welcome to LSU Moodle (test)!
+theme_snap|subtitle|Louisiana State University (test)
+theme_snap|headingfont|Roboto
+block_backadel|path|/storage/
+enrol_workdaystudent|apiversion|43.0
+enrol_workdaystudent|campus|AU00000079
+enrol_workdaystudent|campusname|LSUAM
+enrol_workdaystudent|brange|60
+enrol_workdaystudent|erange|0
+enrol_workdaystudent|autoparent|0
+enrol_workdaystudent|parentcat|
+enrol_workdaystudent|primaryrole|
+enrol_workdaystudent|nonprimaryrole|
+enrol_workdaystudent|studentrole|
+enrol_workdaystudent|unenroll|
+enrol_workdaystudent|numberthreshold|10000
+enrol_workdaystudent|createprior|60
+enrol_workdaystudent|enrollprior|60
+enrol_workdaystudent|visible|0
+enrol_workdaystudent|course_grouping|0
+enrol_workdaystudent|suspend|0
+enrol_workdaystudent|namingformat|WDS - {period_year} {period_type} {course_subject_abbreviation} {course_number} for {firstname} {lastname} {delivery_mode}
+enrol_workdaystudent|contacts|rrusso@lsu.edu
+EOF
 
-# Set theme to snap.
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
-    --name=theme \
-    --set=snap \
-    & spinner $!
-
-#Set snap colors to blue.
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
-    --component=theme_snap \
-    --name="themecolor" \
-    --set="#461d7c" \
-    & spinner $!
-
-#Set site name
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
-    --component=theme_snap \
-    --name=fullname \
-    --set="Welcome to LSU Moodle (test)!" \
-    & spinner $!
-
-#Set site description
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
-    --component=theme_snap \
-    --name=subtitle \
-    --set="Louisiana State University (test)" \
-    & spinner $!
-
-#Set font to Roboto
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
-    --component=theme_snap \
-    --name=headingfont \
-    --set="Roboto" \
-    & spinner $!
+#Set confidential config values from ./confidential
+while IFS='|' read -r component name value; do
+    [[ -z "$name" || "$name" =~ ^# ]] && continue
+    set_config "$component" "$name" "$value"
+done < ./confidential
 
 #Set custom CSS (if config/custom.css exists and is not empty)
 CUSTOM_CSS_FILE="$(dirname "$0")/config/custom.css"
 if [ -s "$CUSTOM_CSS_FILE" ]; then
     # Copy CSS file to container and set via PHP (file too large for command line arg)
-    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-web-1:/tmp/custom.css"
+    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-web-1:/tmp/custom.css" && \
     MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php -r "
         define('CLI_SCRIPT', true);
         require('/var/www/html/config.php');
         \$css = file_get_contents('/tmp/custom.css');
         set_config('customcss', \$css, 'theme_snap');
-    "
-    MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" rm /tmp/custom.css
+    " && \
+    MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" rm /tmp/custom.css & spinner $!
 fi
+
+# Set git username and email based on the user's system.
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.name "$(git config --global user.name)"
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.email "$(git config --global user.email)"
 
 echo ""
 echo "A new LSU Online Moodle dev environment ($NAME) is up and running. Log in here: "
-LOGIN_URL="$URL/login/index.php"
+LOGIN_URL="$URL/login/index.php?username=${CFG_ADMINUSER}"
 printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
 printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"
+
+echo -e "\nWhen you're done, you can stop the environment with: 
+docker compose -p ${NAME} down"
