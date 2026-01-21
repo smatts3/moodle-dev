@@ -25,6 +25,8 @@ RUN apt-get install -y --fix-missing \
 	&& docker-php-ext-install intl mbstring exif xsl soap \
 	&& pecl install redis \
 	&& docker-php-ext-enable redis \
+	&& pecl install xdebug \
+	&& docker-php-ext-enable xdebug \
 	&& apt clean
 
 # Copy over configs
