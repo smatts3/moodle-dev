@@ -38,8 +38,13 @@ set_config() {
     local component="$1"
     local name="$2"
     local value="$3"
-    
-    echo -n "Setting config: $component | $name | $value "
+    local confidential="$4"
+
+    if [ "$confidential" = true ]; then
+        echo -n "Setting confidential config: $component | $name | ***** "
+    else
+        echo -n "Setting config: $component | $name | $value "
+    fi
     
     if [ -z "$component" ] || [ "$component" = "-" ]; then
         MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
@@ -147,9 +152,9 @@ if [ "$SKIP_INSTALL" = false ]; then
         2>/dev/null &
     spinner $!
 
-    echo -e "\nInstallation complete!"
+    echo -e "\nMoodle installation complete!"
 else
-    echo "Skipping Moodle installation \(--skip flag provided\)."
+    echo "Skipping Moodle installation: --skip flag provided."
 fi
 
 # Set misc config values (component|name|value format, use - for core settings)
@@ -189,7 +194,7 @@ EOF
 #Set confidential config values from ./confidential
 while IFS='|' read -r component name value; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
-    set_config "$component" "$name" "$value"
+    set_config "$component" "$name" "$value" true
 done < ./confidential
 
 #Set custom CSS (if config/custom.css exists and is not empty)
