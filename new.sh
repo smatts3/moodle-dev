@@ -137,10 +137,10 @@ MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git pull --autostash origin deve
 URL="http://moodle.${NAME}.localhost"
 
 if [ "$SKIP_INSTALL" = false ]; then
-    echo "Waiting for database to come online."
+    echo "Waiting for database to come online... "
     sleep 5 & spinner $!
 
-    echo "Running Moodle CLI installation..."
+    echo "Running Moodle CLI installation... "
 
     # Fill in config form defaults. Adapt as needed for your environment.
     CFG_DBHOST="db"
@@ -188,7 +188,7 @@ else
 fi
 
 # Set misc config values (component|name|value format, use - for core settings)
-echo "Setting up theme and config..."
+echo "Setting up theme and config... "
 while IFS='|' read -r component name value; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
     set_config "$component" "$name" "$value"
@@ -222,12 +222,14 @@ enrol_workdaystudent|contacts|rrusso@lsu.edu
 EOF
 
 #Set confidential config values from ./confidential
+echo "Setting confidential config values... "
 while IFS='|' read -r component name value; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
     set_config "$component" "$name" "$value" true
 done < ./confidential
 
 #Set custom CSS (if config/custom.css exists and is not empty)
+echo "Setting custom CSS... "
 CUSTOM_CSS_FILE="$(dirname "$0")/config/custom.css"
 if [ -s "$CUSTOM_CSS_FILE" ]; then
     # Copy CSS file to container and set via PHP (file too large for command line arg)
@@ -241,7 +243,13 @@ if [ -s "$CUSTOM_CSS_FILE" ]; then
     MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" rm /tmp/custom.css & spinner $!
 fi
 
-# Set git username and email based on the user's system.
+# Set site_is_public to false in config.php using sed to insert the line before the require_once line.
+echo "Setting \$CFG->site_is_public = false in config.php..."
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sed -i "/require_once/s/^/\$CFG->site_is_public = false;\n/" /var/www/html/config.php
+
+
+# Set git username and email based on the user's system
+echo "Setting git username and email... "
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git config --global user.name "$(git config --global user.name)"
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git config --global user.email "$(git config --global user.email)"
 
