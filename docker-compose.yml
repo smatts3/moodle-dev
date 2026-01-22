@@ -25,33 +25,39 @@ services:
       DB_PASSWORD: moodlepass
       BRANCH_NAME: ${BRANCH_NAME:-default}
     restart: always
-    ports:
-      - "80"
+    networks:
+      - default
+      - traefik
     labels:
       - traefik.enable=true
       - traefik.http.routers.${BRANCH_NAME}.rule=Host(`${BRANCH_NAME}.localhost`)
       - traefik.http.routers.${BRANCH_NAME}.entrypoints=web
       - traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${BRANCH_NAME}.middlewares=moodle-headers
-      - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Host={host}
-      - traefik.http.middlewares.moodle-headers.headers.customRequestHeaders.X-Forwarded-Proto=https
+      - traefik.docker.network=traefik
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     depends_on:
       - db
-    ports:
-      - "80"
+    networks:
+      - default
+      - traefik
     environment:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: rootpassword
     restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${BRANCH_NAME}-pma.rule=Host(`${BRANCH_NAME}-pma.localhost`)
+      - traefik.http.routers.${BRANCH_NAME}-pma.entrypoints=web
+      - traefik.http.services.${BRANCH_NAME}-pma.loadbalancer.server.port=80
+      - traefik.docker.network=traefik
 
   workday-simulator:
     image: workday-simulator
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       SEED_DATA: "true"
       SEED_STUDENTS: 1000
@@ -61,3 +67,7 @@ services:
       AUTH_PASSWORD_ACADEMIC: academic
       AUTH_PASSWORD_EMPLOYEE: employee
     restart: always
+
+networks:
+  traefik:
+    external: true

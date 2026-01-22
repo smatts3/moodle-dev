@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+TRAEFIK_NETWORK="traefik"
+TRAEFIK_CONTAINER="traefik"
+
 function cursorBack() {
   echo -en "\033[$1D"
 }
@@ -29,6 +32,35 @@ function spinner() {
     echo " "
 
     return $?
+}
+
+# Ensure the traefik network exists
+ensure_traefik_network() {
+    if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null; then
+        echo "Creating traefik network..."
+        docker network create "$TRAEFIK_NETWORK"
+    fi
+}
+
+# Ensure Traefik is running
+ensure_traefik_running() {
+    if ! docker ps --format '{{.Names}}' | grep -q "^${TRAEFIK_CONTAINER}$"; then
+        echo "Starting Traefik..."
+        docker run -d \
+            --name "$TRAEFIK_CONTAINER" \
+            --restart always \
+            --network "$TRAEFIK_NETWORK" \
+            -p 80:80 \
+            -p 8080:8080 \
+            -v //var/run/docker.sock:/var/run/docker.sock:ro \
+            traefik:v3.0 \
+            --api.insecure=true \
+            --providers.docker=true \
+            --providers.docker.exposedbydefault=false \
+            --providers.docker.network="$TRAEFIK_NETWORK" \
+            --entrypoints.web.address=:80
+        echo "Traefik started. Dashboard available at http://localhost:8080"
+    fi
 }
 
 # Set a Moodle config value via CLI
@@ -92,19 +124,17 @@ if [ -z "$NAME" ]; then
     NAME=$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -An -t x1 | tr -d ' \n')
 fi
 
+# Ensure Traefik infrastructure is ready
+ensure_traefik_network
+ensure_traefik_running
 
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 
 # Update the container with the latest code
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git pull --autostash origin develop
 
-#Figure out what port docker mapped to localhost
-PORT=$(docker port "${NAME}-web-1" 80 | head -n1 | sed 's/.*://' | tr -d '\r')
-
-# Inside the container, set the wwwroot config value to use localhost and the mapped port
-MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" bash -lc "echo \"${PORT}\" > /PUBLIC_PORT"
-# This should be a link in some terminals.
-URL="http://localhost:${PORT}"
+# Use Traefik hostname for stable URL (survives container restarts)
+URL="http://${NAME}.localhost"
 
 if [ "$SKIP_INSTALL" = false ]; then
     echo "Waiting for database to come online."
@@ -216,10 +246,18 @@ MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.name "$(
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.email "$(git config --global user.email)"
 
 echo ""
-echo "A new LSU Online Moodle dev environment ($NAME) is up and running. Log in here: "
+echo "A new LSU Online Moodle dev environment ($NAME) is up and running."
+echo ""
+echo "Moodle: "
 LOGIN_URL="$URL/login/index.php?loginredirect=1&username=${CFG_ADMINUSER}"
 printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
 printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"
+echo ""
+echo "phpMyAdmin: http://${NAME}-pma.localhost"
+echo "Traefik Dashboard: http://localhost:8080"
 
 echo -e "\nWhen you're done, you can stop the environment with: 
-docker compose -p ${NAME} down"
+docker compose -p ${NAME} down
+
+Note: Traefik will keep running to support other stacks. To stop it:
+docker stop traefik && docker rm traefik"
