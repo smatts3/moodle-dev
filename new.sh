@@ -250,14 +250,11 @@ echo "A new LSU Online Moodle dev environment ($NAME) is up and running."
 echo ""
 echo "Moodle: "
 LOGIN_URL="$URL/login/index.php?loginredirect=1&username=${CFG_ADMINUSER}"
-printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
+printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$URL" 
 printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"
 echo ""
-echo "phpMyAdmin: http://phpmyadmin.${NAME}.localhost"
-echo "Traefik Dashboard: http://localhost:8080"
+echo "phpMyAdmin: "
+printf '\e]8;;%s\a%s\e]8;;\a\n' "http://phpmyadmin.${NAME}.localhost" "http://phpmyadmin.${NAME}.localhost"
 
 echo -e "\nWhen you're done, you can stop the environment with: 
-docker compose -p ${NAME} down
-
-Note: Traefik will keep running to support other stacks. To stop it:
-docker stop traefik && docker rm traefik"
+docker compose -p ${NAME} down"
