@@ -1,6 +1,7 @@
 services:
   db:
     image: mariadb:10.9
+    container_name: ${BRANCH_NAME}-db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -15,6 +16,7 @@ services:
 
   web:
     image: lsuonline/moodle-dev:latest
+    container_name: ${BRANCH_NAME}-moodle
     depends_on:
       db:
         condition: service_healthy
@@ -30,13 +32,14 @@ services:
       - traefik
     labels:
       - traefik.enable=true
-      - traefik.http.routers.${BRANCH_NAME}.rule=Host(`${BRANCH_NAME}.localhost`)
-      - traefik.http.routers.${BRANCH_NAME}.entrypoints=web
-      - traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${BRANCH_NAME}-moodle.rule=Host(`moodle.${BRANCH_NAME}.localhost`)
+      - traefik.http.routers.${BRANCH_NAME}-moodle.entrypoints=web
+      - traefik.http.services.${BRANCH_NAME}-moodle.loadbalancer.server.port=80
       - traefik.docker.network=traefik
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    container_name: ${BRANCH_NAME}-phpmyadmin
     depends_on:
       - db
     networks:
@@ -49,15 +52,14 @@ services:
     restart: always
     labels:
       - traefik.enable=true
-      - traefik.http.routers.${BRANCH_NAME}-pma.rule=Host(`${BRANCH_NAME}-pma.localhost`)
-      - traefik.http.routers.${BRANCH_NAME}-pma.entrypoints=web
-      - traefik.http.services.${BRANCH_NAME}-pma.loadbalancer.server.port=80
+      - traefik.http.routers.${BRANCH_NAME}-phpmyadmin.rule=Host(`phpmyadmin.${BRANCH_NAME}.localhost`)
+      - traefik.http.routers.${BRANCH_NAME}-phpmyadmin.entrypoints=web
+      - traefik.http.services.${BRANCH_NAME}-phpmyadmin.loadbalancer.server.port=80
       - traefik.docker.network=traefik
 
   workday-simulator:
     image: workday-simulator
-    ports:
-      - "8081:8080"
+    container_name: ${BRANCH_NAME}-workday-simulator
     environment:
       SEED_DATA: "true"
       SEED_STUDENTS: 1000
@@ -66,6 +68,15 @@ services:
       SEED_SECTIONS: 150
       AUTH_PASSWORD_ACADEMIC: academic
       AUTH_PASSWORD_EMPLOYEE: employee
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${BRANCH_NAME}-workday-simulator.rule=Host(`workday-simulator.${BRANCH_NAME}.localhost`)
+      - traefik.http.routers.${BRANCH_NAME}-workday-simulator.entrypoints=web
+      - traefik.http.services.${BRANCH_NAME}-workday-simulator.loadbalancer.server.port=8080
+      - traefik.docker.network=traefik
     restart: always
 
 networks:

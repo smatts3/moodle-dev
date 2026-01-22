@@ -79,12 +79,12 @@ set_config() {
     fi
     
     if [ -z "$component" ] || [ "$component" = "-" ]; then
-        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php /var/www/html/admin/cli/cfg.php \
             --name="$name" \
             --set="$value" \
             & spinner $!
     else
-        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/cfg.php \
+        MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php /var/www/html/admin/cli/cfg.php \
             --component="$component" \
             --name="$name" \
             --set="$value" \
@@ -131,10 +131,10 @@ ensure_traefik_running
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 
 # Update the container with the latest code
-MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git pull --autostash origin develop
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git pull --autostash origin develop
 
 # Use Traefik hostname for stable URL (survives container restarts)
-URL="http://${NAME}.localhost"
+URL="http://moodle.${NAME}.localhost"
 
 if [ "$SKIP_INSTALL" = false ]; then
     echo "Waiting for database to come online."
@@ -160,7 +160,7 @@ if [ "$SKIP_INSTALL" = false ]; then
     CFG_SUPPORTEMAIL="admin@example.com"
 
     # Run Moodle CLI installation
-    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php /var/www/html/admin/cli/install.php \
+    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php /var/www/html/admin/cli/install.php \
         --non-interactive \
         --agree-license \
         --allow-unstable \
@@ -231,19 +231,19 @@ done < ./confidential
 CUSTOM_CSS_FILE="$(dirname "$0")/config/custom.css"
 if [ -s "$CUSTOM_CSS_FILE" ]; then
     # Copy CSS file to container and set via PHP (file too large for command line arg)
-    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-web-1:/tmp/custom.css" && \
-    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-web-1" php -r "
+    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-moodle:/tmp/custom.css" && \
+    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php -r "
         define('CLI_SCRIPT', true);
         require('/var/www/html/config.php');
         \$css = file_get_contents('/tmp/custom.css');
         set_config('customcss', \$css, 'theme_snap');
     " && \
-    MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" rm /tmp/custom.css & spinner $!
+    MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" rm /tmp/custom.css & spinner $!
 fi
 
 # Set git username and email based on the user's system.
-MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.name "$(git config --global user.name)"
-MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.email "$(git config --global user.email)"
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git config --global user.name "$(git config --global user.name)"
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git config --global user.email "$(git config --global user.email)"
 
 echo ""
 echo "A new LSU Online Moodle dev environment ($NAME) is up and running."
@@ -253,7 +253,7 @@ LOGIN_URL="$URL/login/index.php?loginredirect=1&username=${CFG_ADMINUSER}"
 printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
 printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"
 echo ""
-echo "phpMyAdmin: http://${NAME}-pma.localhost"
+echo "phpMyAdmin: http://phpmyadmin.${NAME}.localhost"
 echo "Traefik Dashboard: http://localhost:8080"
 
 echo -e "\nWhen you're done, you can stop the environment with: 
