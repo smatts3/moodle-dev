@@ -47,3 +47,17 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpassword
     restart: always
+
+  workday-simulator:
+    image: workday-simulator
+    ports:
+      - "8080:8080"
+    environment:
+      SEED_DATA: "true"
+      SEED_STUDENTS: 1000
+      SEED_EMPLOYEES: 100
+      SEED_COURSES: 50
+      SEED_SECTIONS: 150
+      AUTH_PASSWORD_ACADEMIC: academic
+      AUTH_PASSWORD_EMPLOYEE: employee
+    restart: always

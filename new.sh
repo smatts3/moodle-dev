@@ -38,7 +38,7 @@ set_config() {
     local component="$1"
     local name="$2"
     local value="$3"
-    local confidential="$4"
+    local confidential="${4:-false}"
 
     if [ "$confidential" = true ]; then
         echo -n "Setting confidential config: $component | $name | ***** "
@@ -217,7 +217,7 @@ MSYS_NO_PATHCONV=1 docker exec "${NAME}-web-1" git config --global user.email "$
 
 echo ""
 echo "A new LSU Online Moodle dev environment ($NAME) is up and running. Log in here: "
-LOGIN_URL="$URL/login/index.php?username=${CFG_ADMINUSER}"
+LOGIN_URL="$URL/login/index.php?loginredirect=1&username=${CFG_ADMINUSER}"
 printf '\e]8;;%s\a%s\e]8;;\a\n' "$LOGIN_URL" "$LOGIN_URL" 
 printf '\nAdmin username: %s\nAdmin password: %s\n' "${CFG_ADMINUSER}" "${CFG_ADMINPASS}"
 
