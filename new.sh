@@ -191,6 +191,8 @@ fi
 echo "Setting up theme and config... "
 while IFS='|' read -r component name value; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
+    # Trim trailing whitespace/newlines from value
+    value="${value%%[[:space:]]}"
     set_config "$component" "$name" "$value"
 done <<'EOF'
 -|bccaddress|${CFG_SUPPORTEMAIL}
@@ -225,6 +227,8 @@ EOF
 echo "Setting confidential config values... "
 while IFS='|' read -r component name value; do
     [[ -z "$name" || "$name" =~ ^# ]] && continue
+    # Trim trailing whitespace/newlines from value
+    value="${value%%[[:space:]]}"
     set_config "$component" "$name" "$value" true
 done < ./confidential
 
