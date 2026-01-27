@@ -58,7 +58,7 @@ services:
       - traefik.docker.network=traefik
 
   workday-simulator:
-    image: workday-simulator
+    image: lsuonline/workday-simulator
     container_name: ${BRANCH_NAME}-workday-simulator
     environment:
       SEED_DATA: "true"
