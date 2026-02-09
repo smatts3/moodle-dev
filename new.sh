@@ -224,13 +224,17 @@ enrol_workdaystudent|contacts|rrusso@lsu.edu
 EOF
 
 #Set confidential config values from ./confidential
-echo "Setting confidential config values... "
-while IFS='|' read -r component name value; do
-    [[ -z "$name" || "$name" =~ ^# ]] && continue
-    # Trim trailing whitespace/newlines from value
-    value="${value%%[[:space:]]}"
-    set_config "$component" "$name" "$value" true
-done < ./confidential
+if [ -f "./confidential" ]; then
+    echo "Setting confidential config values... "
+    while IFS='|' read -r component name value; do
+        [[ -z "$name" || "$name" =~ ^# ]] && continue
+        # Trim trailing whitespace/newlines from value
+        value="${value%%[[:space:]]}"
+        set_config "$component" "$name" "$value" true
+    done < ./confidential
+else
+    echo "No confidential config values found. Skipping..."
+fi
 
 #Set custom CSS (if config/custom.css exists and is not empty)
 echo "Setting custom CSS... "
