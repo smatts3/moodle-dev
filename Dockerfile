@@ -48,7 +48,8 @@ RUN git config --global --add safe.directory /var/www/html && \
 	git config --global alias.co checkout && \
 	git config --global alias.br branch && \
 	git config --global alias.ci commit && \
-	git config --global alias.st status
+	git config --global alias.st status && \
+	git config --global pull.ff only
 #Install VSCode extensions
 CMD ["apache2-foreground"]
 #http://localhost:63942/admin/index.php?cache=0&agreelicense=1&confirmrelease=1&lang=en
