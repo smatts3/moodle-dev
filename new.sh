@@ -142,6 +142,12 @@ if [ "$SKIP_INSTALL" = false ]; then
 
     echo "Running Moodle CLI installation... "
 
+    # Check that the config.php file exists and delete it if it does.
+    if [ -f "${NAME}-moodle:/var/www/html/config.php" ]; then
+        echo "Deleting config.php file... "
+        MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" rm /var/www/html/config.php
+    fi
+
     # Fill in config form defaults. Adapt as needed for your environment.
     CFG_DBHOST="db"
     CFG_DBNAME="moodle"
