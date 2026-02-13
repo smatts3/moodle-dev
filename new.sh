@@ -143,13 +143,15 @@ MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
   rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
   git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && \
   git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs && \
-  git update-index --skip-worktree config.php
+  git update-index --skip-worktree config.php && \
+  git config --global alias.pull "!/usr/local/bin/moodle-pull"
 '
 
-# So root can run git in the cloned plugin dirs (they are owned by www-data)
+# So root can run git in the cloned plugin dirs (they are owned by www-data), and override pull with moodle-pull
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c '
   git config --global --add safe.directory /var/www/html/enrol/workdaystudent && \
-  git config --global --add safe.directory /var/www/html/blocks/wdsprefs
+  git config --global --add safe.directory /var/www/html/blocks/wdsprefs && \
+  git config --global alias.pull "!/usr/local/bin/moodle-pull"
 '
 
 # Use Traefik hostname for stable URL (survives container restarts)

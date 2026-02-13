@@ -31,9 +31,11 @@ RUN apt-get install -y --fix-missing \
 
 # Copy over configs
 COPY --chown=www-data:www-data config/php.ini /usr/local/etc/php/php.ini
+COPY config/moodle-pull /usr/local/bin/moodle-pull
 
 # Tweaky stuff && set permissions
-RUN git config --global --add safe.directory /var/www/html && \
+RUN chmod +x /usr/local/bin/moodle-pull && \
+	git config --global --add safe.directory /var/www/html && \
 	git config pull.ff only && \
 	git config pull.rebase true && \
 	chown www-data:www-data /usr/local/etc/php/php.ini && \
