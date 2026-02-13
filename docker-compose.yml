@@ -26,6 +26,9 @@ services:
       DB_USER: moodleuser
       DB_PASSWORD: moodlepass
       BRANCH_NAME: ${BRANCH_NAME:-default}
+    # So Moodle install and CLI can reach wwwroot (e.g. http://moodle.NAME.localhost) from inside the container
+    extra_hosts:
+      - "moodle.${BRANCH_NAME}.${TRAEFIK_HOST:-localhost}:127.0.0.1"
     restart: always
     networks:
       - default

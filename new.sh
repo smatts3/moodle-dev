@@ -130,8 +130,21 @@ ensure_traefik_running
 
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 
-# Update the container with the latest code
-MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" git pull --autostash origin develop
+# Update the container with the latest code (remove plugin dirs so merge doesn't abort; merge recreates them, so remove again before re-cloning)
+# blocks/ues_people is removed to avoid Moodle naming conflict with block_lsu_people (same title); not re-cloned.
+# skip-worktree on ues_people and config.php so git status is clean after startup.
+MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
+  cd /var/www/html && \
+  git config --add safe.directory /var/www/html && \
+  rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+  git fetch origin develop && \
+  git merge origin/develop && \
+  git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
+  rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+  git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && \
+  git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs && \
+  git update-index --skip-worktree config.php
+'
 
 # Use Traefik hostname for stable URL (survives container restarts)
 URL="http://moodle.${NAME}.localhost"
@@ -142,11 +155,8 @@ if [ "$SKIP_INSTALL" = false ]; then
 
     echo "Running Moodle CLI installation... "
 
-    # Check that the config.php file exists and delete it if it does.
-    if [ -f "${NAME}-moodle:/var/www/html/config.php" ]; then
-        echo "Deleting config.php file... "
-        MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" rm /var/www/html/config.php
-    fi
+    # Remove config.php if present (e.g. from repo or previous run) so install can run cleanly.
+    docker exec "${NAME}-moodle" rm -f /var/www/html/config.php 2>/dev/null || true
 
     # Fill in config form defaults. Adapt as needed for your environment.
     CFG_DBHOST="db"
@@ -165,28 +175,32 @@ if [ "$SKIP_INSTALL" = false ]; then
     CFG_SHORTNAME="LSU Online (test)"
     CFG_SUPPORTEMAIL="admin@example.com"
 
-    # Run Moodle CLI installation
-    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php /var/www/html/admin/cli/install.php \
+    # Run Moodle CLI installation (rm -f config.php again right before so nothing can have recreated it)
+    MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c "rm -f /var/www/html/config.php && php /var/www/html/admin/cli/install.php \
         --non-interactive \
         --agree-license \
         --allow-unstable \
-        --lang="${CFG_LANG}" \
-        --wwwroot="${CFG_WWWROOT}" \
-        --dataroot="${CFG_DATAROOT}" \
-        --dbtype="${CFG_DBTYPE}" \
-        --dbhost="${CFG_DBHOST}" \
-        --dbname="${CFG_DBNAME}" \
-        --dbuser="${CFG_DBUSER}" \
-        --dbpass="${CFG_DBPASS}" \
-        --prefix="${CFG_PREFIX}" \
-        --fullname="${CFG_FULLNAME}" \
-        --shortname="${CFG_SHORTNAME}" \
-        --adminuser="${CFG_ADMINUSER}" \
-        --adminpass="${CFG_ADMINPASS}" \
-        --adminemail="${CFG_ADMINEMAIL}" \
-        --supportemail="${CFG_SUPPORTEMAIL}" \
-        2>/dev/null &
+        --lang=\"${CFG_LANG}\" \
+        --wwwroot=\"${CFG_WWWROOT}\" \
+        --dataroot=\"${CFG_DATAROOT}\" \
+        --dbtype=\"${CFG_DBTYPE}\" \
+        --dbhost=\"${CFG_DBHOST}\" \
+        --dbname=\"${CFG_DBNAME}\" \
+        --dbuser=\"${CFG_DBUSER}\" \
+        --dbpass=\"${CFG_DBPASS}\" \
+        --prefix=\"${CFG_PREFIX}\" \
+        --fullname=\"${CFG_FULLNAME}\" \
+        --shortname=\"${CFG_SHORTNAME}\" \
+        --adminuser=\"${CFG_ADMINUSER}\" \
+        --adminpass=\"${CFG_ADMINPASS}\" \
+        --adminemail=\"${CFG_ADMINEMAIL}\" \
+        --supportemail=\"${CFG_SUPPORTEMAIL}\"" &
     spinner $!
+    INSTALL_EXIT=$?
+    if [ "$INSTALL_EXIT" -ne 0 ]; then
+        echo -e "\nMoodle installation failed (exit code $INSTALL_EXIT). Stopping." >&2
+        exit 1
+    fi
 
     echo -e "\nMoodle installation complete!"
 else

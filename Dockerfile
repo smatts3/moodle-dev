@@ -40,11 +40,13 @@ RUN git config --global --add safe.directory /var/www/html && \
 	chmod 755 /usr/local/etc/php/php.ini && \
 	mkdir -p /var/www/moodledata/storage && \ 
 	chown -R www-data:www-data /var/www/moodledata && \
-	echo 'enrol/workdaystudent/\nblocks/wdsprefs/' >> /var/www/html/.git/info/exclude && \
-	git -C /var/www/html ls-files enrol/workdaystudent blocks/wdsprefs | xargs git -C /var/www/html update-index --skip-worktree && \
-	rm -rf /var/www/html/enrol/workdaystudent /var/www/html/blocks/wdsprefs && \
+	echo 'enrol/workdaystudent/\nblocks/wdsprefs/\nblocks/ues_people/' >> /var/www/html/.git/info/exclude && \
+	git -C /var/www/html config --add safe.directory /var/www/html && \
+	git -C /var/www/html ls-files enrol/workdaystudent blocks/wdsprefs blocks/ues_people | xargs -r git -C /var/www/html update-index --skip-worktree && \
+	rm -rf /var/www/html/enrol/workdaystudent /var/www/html/blocks/wdsprefs /var/www/html/blocks/ues_people && \
 	git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git /var/www/html/enrol/workdaystudent && \
 	git clone https://github.com/lsuonline/moodle-block_wdsprefs.git /var/www/html/blocks/wdsprefs && \
+	chown -R www-data:www-data /var/www/html && \
 	git config --global alias.co checkout && \
 	git config --global alias.br branch && \
 	git config --global alias.ci commit && \
