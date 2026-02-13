@@ -146,6 +146,12 @@ MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
   git update-index --skip-worktree config.php
 '
 
+# So root can run git in the cloned plugin dirs (they are owned by www-data)
+MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c '
+  git config --global --add safe.directory /var/www/html/enrol/workdaystudent && \
+  git config --global --add safe.directory /var/www/html/blocks/wdsprefs
+'
+
 # Use Traefik hostname for stable URL (survives container restarts)
 URL="http://moodle.${NAME}.localhost"
 
