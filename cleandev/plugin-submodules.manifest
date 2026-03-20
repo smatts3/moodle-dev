@@ -1,0 +1,8 @@
+# Moodle plugin paths → separate git repos (submodule layout).
+# Format: relative_path|clone_url|branch
+# Lines starting with # are ignored. Branch defaults to main if empty.
+#
+# Sync with new.sh clone URLs / your lsuce-moodle develop tree.
+
+enrol/workdaystudent|https://github.com/lsuonline/moodle-enrol_workdaystudent.git|main
+blocks/wdsprefs|https://github.com/lsuonline/moodle-block_wdsprefs.git|main
