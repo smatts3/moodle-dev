@@ -51,6 +51,28 @@ fi
 
 cd "$REPO_ROOT"
 
+disable_sparse_checkout_if_needed() {
+  $DRY_RUN && return 0
+  local active=
+  [[ -f .git/info/sparse-checkout ]] && active=1
+  [[ "$(git config --bool core.sparseCheckout 2>/dev/null)" == "true" ]] && active=1
+  [[ "$(git config --bool index.sparse 2>/dev/null)" == "true" ]] && active=1
+  if [[ -z "$active" ]] && command -v git >/dev/null; then
+    local listed
+    listed="$(git sparse-checkout list 2>/dev/null | head -n 1 || true)"
+    [[ -n "${listed// }" ]] && active=1
+  fi
+  [[ -z "$active" ]] && return 0
+  echo "Disabling sparse-checkout so plugin paths can be vendored." >&2
+  git sparse-checkout disable 2>/dev/null || true
+  git config core.sparseCheckout false 2>/dev/null || true
+  git config --unset-all core.sparseCheckoutCone 2>/dev/null || true
+  git config index.sparse false 2>/dev/null || true
+  rm -f .git/info/sparse-checkout
+}
+
+disable_sparse_checkout_if_needed
+
 manifest_entries=0
 while IFS='|' read -r raw_path raw_url raw_branch; do
   path="${raw_path#"${raw_path%%[![:space:]]*}"}"
@@ -89,7 +111,7 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
   trap 'rm -rf "$tmp"' EXIT
   GIT_TERMINAL_PROMPT=0 git clone --depth 1 -b "$branch" -- "$url" "$tmp/clone"
   git submodule deinit -f -- "$path"
-  git rm -f -- "$path"
+  git rm -f --sparse -- "$path" 2>/dev/null || git rm -f -- "$path"
   mod_gitdir="$(git rev-parse --git-path "modules/$path")"
   if [[ -n "$mod_gitdir" && -e "$mod_gitdir" ]]; then
     rm -rf -- "$mod_gitdir"
@@ -102,7 +124,7 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
   trap - EXIT
   rm -rf "$tmp"
 
-  git add -- "$path"
+  git -c core.sparseCheckout=false -c index.sparse=false add -- "$path"
 done < "$MANIFEST"
 
 if [[ "$manifest_entries" -eq 0 ]]; then

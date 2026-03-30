@@ -1,0 +1,2 @@
+# Shell scripts copied into Linux containers must use LF only (CRLF breaks bash).
+cleandev/*.sh text eol=lf

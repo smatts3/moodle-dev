@@ -52,6 +52,30 @@ fi
 
 cd "$REPO_ROOT"
 
+# Moodle dev images often use sparse-checkout (cone, index.sparse, or only .git/info/sparse-checkout).
+# If any of that is active, git rm / submodule add can refuse paths "outside" the cone.
+disable_sparse_checkout_if_needed() {
+  $DRY_RUN && return 0
+  local active=
+  [[ -f .git/info/sparse-checkout ]] && active=1
+  [[ "$(git config --bool core.sparseCheckout 2>/dev/null)" == "true" ]] && active=1
+  [[ "$(git config --bool index.sparse 2>/dev/null)" == "true" ]] && active=1
+  if [[ -z "$active" ]] && command -v git >/dev/null; then
+    local listed
+    listed="$(git sparse-checkout list 2>/dev/null | head -n 1 || true)"
+    [[ -n "${listed// }" ]] && active=1
+  fi
+  [[ -z "$active" ]] && return 0
+  echo "Disabling sparse-checkout so plugin paths can be converted to submodules." >&2
+  git sparse-checkout disable 2>/dev/null || true
+  git config core.sparseCheckout false 2>/dev/null || true
+  git config --unset-all core.sparseCheckoutCone 2>/dev/null || true
+  git config index.sparse false 2>/dev/null || true
+  rm -f .git/info/sparse-checkout
+}
+
+disable_sparse_checkout_if_needed
+
 run() {
   if $DRY_RUN; then
     printf '[dry-run] %q\n' "$@"
@@ -100,15 +124,26 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
     run mkdir -p "$parent"
   fi
 
-  if [[ -e "$path" ]]; then
-    if git ls-files --error-unmatch "$path" &>/dev/null; then
-      run git rm -rf -- "$path"
+  # Use tracked-file listing, not --error-unmatch: for a directory, Git often has no
+  # single index entry named exactly $path, only files underneath — then plain rm
+  # would leave the path in the index and submodule add fails.
+  if [[ -n "$(git ls-files -- "$path" 2>/dev/null)" ]]; then
+    if $DRY_RUN; then
+      printf '[dry-run] git rm -rf [--sparse] -- %q\n' "$path"
     else
-      run rm -rf -- "$path"
+      git rm -rf --sparse -- "$path" 2>/dev/null || git rm -rf -- "$path"
     fi
+  elif [[ -e "$path" ]]; then
+    run rm -rf -- "$path"
   fi
 
-  run git submodule add -b "$branch" -- "$url" "$path"
+  if $DRY_RUN; then
+    printf '[dry-run] git submodule add -f -b %q -- %q %q\n' "$branch" "$url" "$path"
+  else
+    # -f: Moodle .gitignore often ignores plugin dirs; without it submodule add fails.
+    # -c overrides: sparse-checkout can still block the add otherwise.
+    git -c core.sparseCheckout=false -c index.sparse=false submodule add -f -b "$branch" -- "$url" "$path"
+  fi
 done < "$MANIFEST"
 
 if [[ "$manifest_entries" -eq 0 ]]; then

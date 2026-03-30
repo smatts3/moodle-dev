@@ -34,6 +34,27 @@ function spinner() {
     return $?
 }
 
+# Git Bash / MSYS + Docker Desktop: docker cp SOURCE must be a Windows path or //drive/...;
+# otherwise paths like /c/Users/... become C:\c and fail with GetFileAttributesEx.
+host_path_for_docker_cp() {
+    local f="$1"
+    case "$(uname -s 2>/dev/null)" in
+        MINGW*|MSYS*|CYGWIN*)
+            if command -v cygpath >/dev/null 2>&1; then
+                cygpath -w "$f"
+                return
+            fi
+            case "$f" in
+                /[a-zA-Z]/*)
+                    printf '//%s' "${f#/}"
+                    return
+                    ;;
+            esac
+            ;;
+    esac
+    printf '%s' "$f"
+}
+
 # Ensure the traefik network exists
 ensure_traefik_network() {
     if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null; then
@@ -93,7 +114,9 @@ set_config() {
 }
 
 SKIP_INSTALL=false
+SUBMODULIZE=false
 NAME=""
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -102,12 +125,18 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: new.sh [OPTION]... [NAME]
     Creates a new dev environment named NAME (or random if not provided).
     Options:
-        -h --help   Shows this text.
-        -s --skip   Skip automatic Moodle installation.";
+        -h --help        Shows this text.
+        -s --skip        Skip automatic Moodle installation.
+        --submodulize    After merge, use cleandev/submodulize.sh for workdaystudent and
+                         wdsprefs (git submodules) instead of plain git clone.";
             exit;
             ;;
         -s|--skip)
             SKIP_INSTALL=true
+            shift
+            ;;
+        --submodulize)
+            SUBMODULIZE=true
             shift
             ;;
         *)
@@ -133,19 +162,40 @@ BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 # Update the container with the latest code (remove plugin dirs so merge doesn't abort; merge recreates them, so remove again before re-cloning)
 # blocks/ues_people is removed to avoid Moodle naming conflict with block_lsu_people (same title); not re-cloned.
 # skip-worktree on ues_people and config.php so git status is clean after startup.
-MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
-  cd /var/www/html && \
-  git config --add safe.directory /var/www/html && \
-  rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
-  git fetch origin develop && \
-  git merge origin/develop && \
-  git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
-  rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
-  git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && \
-  git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs && \
-  git update-index --skip-worktree config.php && \
-  git config --global alias.pull "!/usr/local/bin/moodle-pull"
-'
+if [ "$SUBMODULIZE" = true ]; then
+  if [ ! -f "${PROJECT_ROOT}/cleandev/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest" ]; then
+    echo "new.sh --submodulize requires cleandev/submodulize.sh and cleandev/plugin-submodules.manifest next to new.sh." >&2
+    exit 1
+  fi
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
+  # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted"
+  MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/plugin-submodules.manifest'
+  MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
+    cd /var/www/html && \
+    git config --add safe.directory /var/www/html && \
+    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+    git fetch origin develop && \
+    git merge origin/develop && \
+    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
+    rm -rf blocks/ues_people && \
+    bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest --no-commit && \
+    git update-index --skip-worktree config.php
+  '
+else
+  MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
+    cd /var/www/html && \
+    git config --add safe.directory /var/www/html && \
+    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+    git fetch origin develop && \
+    git merge origin/develop && \
+    git ls-files enrol/workdaystudent blocks/wdsprefs blocks/ues_people | xargs -r git update-index --skip-worktree && \
+    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+    git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && \
+    git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs && \
+    git update-index --skip-worktree config.php
+  '
+fi
 
 # So root can run git in the cloned plugin dirs (they are owned by www-data), and override pull with moodle-pull
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c '
@@ -269,7 +319,7 @@ echo "Setting custom CSS... "
 CUSTOM_CSS_FILE="$(dirname "$0")/config/custom.css"
 if [ -s "$CUSTOM_CSS_FILE" ]; then
     # Copy CSS file to container and set via PHP (file too large for command line arg)
-    MSYS_NO_PATHCONV=1 docker cp -q "$CUSTOM_CSS_FILE" "${NAME}-moodle:/tmp/custom.css" && \
+    MSYS_NO_PATHCONV=1 docker cp -q "$(host_path_for_docker_cp "$CUSTOM_CSS_FILE")" "${NAME}-moodle:/tmp/custom.css" && \
     MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" php -r "
         define('CLI_SCRIPT', true);
         require('/var/www/html/config.php');
