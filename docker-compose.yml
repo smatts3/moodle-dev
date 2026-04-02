@@ -15,7 +15,11 @@ services:
       retries: 10
 
   web:
-    image: lsuonline/moodle-dev:latest
+    # Moodle 4.5.x is supported through PHP 8.3. PHP 8.4+ can break CLI install with:
+    #   Exception - Cannot compile closures which import variables using the `use` keyword
+    # (Laravel SerializableClosure). Override if your registry publishes a PHP 8.3 image, e.g.:
+    #   MOODLE_DEV_IMAGE=lsuonline/moodle-dev:php83 docker compose -p NAME up -d
+    image: ${MOODLE_DEV_IMAGE:-lsuonline/moodle-dev:latest}
     container_name: ${BRANCH_NAME}-moodle
     depends_on:
       db:

@@ -87,6 +87,46 @@ ensure_traefik_running() {
 # Set a Moodle config value via CLI
 # Usage: set_config [component] name value
 #   - If component is empty or "-", sets a core config
+resolve_submod_github_token() {
+    local github_token_file="${PROJECT_ROOT}/cleandev/.github-token"
+    SUBMOD_GIT_TOKEN=""
+    if [ "${SUBMODULIZE_SSH:-}" = "1" ]; then
+        return 0
+    fi
+    SUBMOD_GIT_TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+    if [ -n "$SUBMOD_GIT_TOKEN" ]; then
+        return 0
+    fi
+    if [ -f "$github_token_file" ]; then
+        SUBMOD_GIT_TOKEN="$(
+            grep -v '^[[:space:]]*#' "$github_token_file" 2>/dev/null |
+                grep -v '^[[:space:]]*$' | head -n1 | tr -d '\r' |
+                sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+        )"
+    fi
+    if [ -n "$SUBMOD_GIT_TOKEN" ]; then
+        return 0
+    fi
+    if [ -t 0 ] && [ -t 1 ]; then
+        echo "GitHub personal access token needed for private submodule repos (read access to org repos)." >&2
+        echo "Saved to cleandev/.github-token (gitignored). Use SUBMODULIZE_SSH=1 instead if you use SSH in the container." >&2
+        read -r -s -p "GitHub token: " SUBMOD_GIT_TOKEN
+        echo >&2
+        if [ -n "$SUBMOD_GIT_TOKEN" ]; then
+            mkdir -p "$(dirname "$github_token_file")"
+            ( umask 077 && printf '%s\n' "$SUBMOD_GIT_TOKEN" >"$github_token_file" )
+            chmod 600 "$github_token_file" 2>/dev/null || true
+            echo "Token stored in cleandev/.github-token" >&2
+        fi
+    fi
+    if [ -n "$SUBMOD_GIT_TOKEN" ]; then
+        return 0
+    fi
+    echo "new.sh: No GitHub token for --submodulize. Options: export GITHUB_TOKEN or GH_TOKEN, create cleandev/.github-token," >&2
+    echo "  run this script in a terminal (interactive prompt), or set SUBMODULIZE_SSH=1 for SSH URLs." >&2
+    exit 1
+}
+
 set_config() {
     local component="$1"
     local name="$2"
@@ -127,8 +167,10 @@ while [[ $# -gt 0 ]]; do
     Options:
         -h --help        Shows this text.
         -s --skip        Skip automatic Moodle installation.
-        --submodulize    After merge, use cleandev/submodulize.sh for workdaystudent and
-                         wdsprefs (git submodules) instead of plain git clone.";
+        --submodulize    After merge, use cleandev/submodulize.sh for manifest plugins (submodules).
+                         GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file cleandev/.github-token,
+                         or an interactive prompt (first run) saves the token there (gitignored). Alternatively
+                         SUBMODULIZE_SSH=1 with SSH usable inside the container.";
             exit;
             ;;
         -s|--skip)
@@ -153,54 +195,66 @@ if [ -z "$NAME" ]; then
     NAME=$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -An -t x1 | tr -d ' \n')
 fi
 
+# Populated when --submodulize runs (env, cleandev/.github-token, or prompt).
+SUBMOD_GIT_TOKEN=""
+
 # Ensure Traefik infrastructure is ready
 ensure_traefik_network
 ensure_traefik_running
 
 BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 
-# Update the container with the latest code (remove plugin dirs so merge doesn't abort; merge recreates them, so remove again before re-cloning)
-# blocks/ues_people is removed to avoid Moodle naming conflict with block_lsu_people (same title); not re-cloned.
-# skip-worktree on ues_people and config.php so git status is clean after startup.
+# Update the container with the latest code. Remove blocks/ues_people so merge does not abort (name clash
+# with block_lsu_people). skip-worktree on ues_people and config.php for a clean git status after startup.
+# enrol/workdaystudent and blocks/wdsprefs come from the lsuce-moodle tree (or --submodulize manifest).
 if [ "$SUBMODULIZE" = true ]; then
   if [ ! -f "${PROJECT_ROOT}/cleandev/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest" ]; then
     echo "new.sh --submodulize requires cleandev/submodulize.sh and cleandev/plugin-submodules.manifest next to new.sh." >&2
     exit 1
   fi
+  resolve_submod_github_token
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
   # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted"
   MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/plugin-submodules.manifest'
-  MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
+  submod_docker_env=(-u www-data)
+  if [ -n "$SUBMOD_GIT_TOKEN" ]; then
+    submod_docker_env+=(-e "GITHUB_TOKEN=${SUBMOD_GIT_TOKEN}")
+  fi
+  if [ "${SUBMODULIZE_SSH:-}" = "1" ]; then
+    submod_docker_env+=(-e "SUBMODULIZE_USE_SSH=1")
+  fi
+  MSYS_NO_PATHCONV=1 docker exec "${submod_docker_env[@]}" "${NAME}-moodle" sh -c '
     cd /var/www/html && \
     git config --add safe.directory /var/www/html && \
-    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+    if [ -n "${GITHUB_TOKEN:-}" ]; then \
+      git config --local url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; \
+    fi && \
+    rm -rf blocks/ues_people && \
     git fetch origin develop && \
     git merge origin/develop && \
     git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
     rm -rf blocks/ues_people && \
-    bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest --no-commit && \
+    SMF="--no-commit" && \
+    if [ "${SUBMODULIZE_USE_SSH:-}" = "1" ]; then SMF="$SMF --ssh"; fi && \
+    bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest $SMF && \
     git update-index --skip-worktree config.php
   '
 else
   MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
     cd /var/www/html && \
     git config --add safe.directory /var/www/html && \
-    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
+    rm -rf blocks/ues_people && \
     git fetch origin develop && \
     git merge origin/develop && \
-    git ls-files enrol/workdaystudent blocks/wdsprefs blocks/ues_people | xargs -r git update-index --skip-worktree && \
-    rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people && \
-    git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && \
-    git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs && \
+    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
+    rm -rf blocks/ues_people && \
     git update-index --skip-worktree config.php
   '
 fi
 
-# So root can run git in the cloned plugin dirs (they are owned by www-data), and override pull with moodle-pull
+# Root: use moodle-pull as git pull (handles merge + blocks/ues_people like above).
 MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c '
-  git config --global --add safe.directory /var/www/html/enrol/workdaystudent && \
-  git config --global --add safe.directory /var/www/html/blocks/wdsprefs && \
   git config --global alias.pull "!/usr/local/bin/moodle-pull"
 '
 

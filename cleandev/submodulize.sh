@@ -5,7 +5,11 @@
 # Requires: git, a clean enough working tree (commit or stash first if paths are dirty).
 #
 # Usage:
-#   ./cleandev/submodulize.sh [--dry-run] [--no-commit] [--manifest PATH] [--repo ROOT]
+#   ./cleandev/submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+#
+# Private GitHub repos over HTTPS need credentials. Set GITHUB_TOKEN (PAT) so HTTPS URLs are rewritten
+# for ls-remote / submodule add (parent repo url.insteadOf is not always applied to submodule clone).
+# Or use --ssh. In Docker with no TTY you see: "could not read Username for 'https://github.com'".
 
 set -euo pipefail
 
@@ -13,12 +17,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST="${SCRIPT_DIR}/plugin-submodules.manifest"
 DRY_RUN=false
 NO_COMMIT=false
+USE_SSH=false
 REPO_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=true; shift ;;
     --no-commit) NO_COMMIT=true; shift ;;
+    --ssh) USE_SSH=true; shift ;;
     --manifest)
       MANIFEST="${2:?}"
       shift 2
@@ -28,7 +34,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      sed -n '1,20p' "$0"
+      sed -n '1,25p' "$0"
       exit 0
       ;;
     *)
@@ -76,6 +82,22 @@ disable_sparse_checkout_if_needed() {
 
 disable_sparse_checkout_if_needed
 
+# Extra -c flags so submodule clone honors GitHub PAT (superproject local config is skipped by some git versions).
+git_github_pat_c=()
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  git_github_pat_c+=(-c "url.https://${GITHUB_TOKEN}@github.com/.insteadOf=https://github.com/")
+fi
+
+# github.com HTTPS → SSH (git@github.com:org/repo.git) when --ssh is set.
+rewrite_github_url_to_ssh() {
+  local u="$1"
+  if $USE_SSH && [[ "$u" == https://github.com/* ]]; then
+    printf '%s\n' "git@github.com:${u#https://github.com/}"
+  else
+    printf '%s\n' "$u"
+  fi
+}
+
 run() {
   if $DRY_RUN; then
     printf '[dry-run] %q\n' "$@"
@@ -96,6 +118,7 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
   [[ -z "$path" || "$path" =~ ^# ]] && continue
   [[ -z "$url" ]] && { echo "Manifest: missing URL for path $path" >&2; exit 1; }
   [[ -z "$branch" ]] && branch="main"
+  url="$(rewrite_github_url_to_ssh "$url")"
 
   ((++manifest_entries)) || true
 
@@ -138,11 +161,23 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
   fi
 
   if $DRY_RUN; then
-    printf '[dry-run] git submodule add -f -b %q -- %q %q\n' "$branch" "$url" "$path"
+    printf '[dry-run] git submodule add -f (-b %q if exists on remote, else default branch) -- %q %q\n' "$branch" "$url" "$path"
   else
     # -f: Moodle .gitignore often ignores plugin dirs; without it submodule add fails.
     # -c overrides: sparse-checkout can still block the add otherwise.
-    git -c core.sparseCheckout=false -c index.sparse=false submodule add -f -b "$branch" -- "$url" "$path"
+    # Many upstream Moodle plugins use master or MOODLE_*_STABLE, not main — omit -b to use remote HEAD.
+    submod_args=(-f)
+    if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
+      submod_args+=(-b "$branch")
+    else
+      [[ -n "$branch" ]] && echo "Remote has no branch '$branch' for $path; using repository default branch." >&2
+    fi
+    if ! GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" -c core.sparseCheckout=false -c index.sparse=false submodule add "${submod_args[@]}" -- "$url" "$path"; then
+      echo "submodulize: failed to add submodule $path ← $url" >&2
+      echo "  If the repo is private: configure HTTPS credentials, or re-run with --ssh (needs GitHub SSH access)." >&2
+      echo "  After a failed add you may need: git submodule deinit -f -- $path 2>/dev/null; rm -rf .git/modules/$path $path" >&2
+      exit 1
+    fi
   fi
 done < "$MANIFEST"
 

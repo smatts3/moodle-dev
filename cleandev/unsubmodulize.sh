@@ -4,7 +4,9 @@
 # to the parent Moodle repository.
 #
 # Usage:
-#   ./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--manifest PATH] [--repo ROOT]
+#   ./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+#
+# Use --ssh when HTTPS clones fail for private github.com repos (same as submodulize.sh).
 
 set -euo pipefail
 
@@ -12,12 +14,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST="${SCRIPT_DIR}/plugin-submodules.manifest"
 DRY_RUN=false
 NO_COMMIT=false
+USE_SSH=false
 REPO_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=true; shift ;;
     --no-commit) NO_COMMIT=true; shift ;;
+    --ssh) USE_SSH=true; shift ;;
     --manifest)
       MANIFEST="${2:?}"
       shift 2
@@ -27,7 +31,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      sed -n '1,18p' "$0"
+      sed -n '1,22p' "$0"
       exit 0
       ;;
     *)
@@ -73,6 +77,15 @@ disable_sparse_checkout_if_needed() {
 
 disable_sparse_checkout_if_needed
 
+rewrite_github_url_to_ssh() {
+  local u="$1"
+  if $USE_SSH && [[ "$u" == https://github.com/* ]]; then
+    printf '%s\n' "git@github.com:${u#https://github.com/}"
+  else
+    printf '%s\n' "$u"
+  fi
+}
+
 manifest_entries=0
 while IFS='|' read -r raw_path raw_url raw_branch; do
   path="${raw_path#"${raw_path%%[![:space:]]*}"}"
@@ -85,6 +98,7 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
   [[ -z "$path" || "$path" =~ ^# ]] && continue
   [[ -z "$url" ]] && { echo "Manifest: missing URL for path $path" >&2; exit 1; }
   [[ -z "$branch" ]] && branch="main"
+  url="$(rewrite_github_url_to_ssh "$url")"
 
   ((++manifest_entries)) || true
 
@@ -109,7 +123,12 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
 
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/unsubmodulize.XXXXXX")"
   trap 'rm -rf "$tmp"' EXIT
-  GIT_TERMINAL_PROMPT=0 git clone --depth 1 -b "$branch" -- "$url" "$tmp/clone"
+  if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
+    GIT_TERMINAL_PROMPT=0 git clone --depth 1 -b "$branch" -- "$url" "$tmp/clone"
+  else
+    [[ -n "$branch" ]] && echo "Remote has no branch '$branch' for $path; cloning default branch." >&2
+    GIT_TERMINAL_PROMPT=0 git clone --depth 1 -- "$url" "$tmp/clone"
+  fi
   git submodule deinit -f -- "$path"
   git rm -f --sparse -- "$path" 2>/dev/null || git rm -f -- "$path"
   mod_gitdir="$(git rev-parse --git-path "modules/$path")"

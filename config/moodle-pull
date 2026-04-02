@@ -1,6 +1,6 @@
 #!/bin/sh
-# Replaces default git pull in the Moodle container: removes plugin dirs, fetches/merges
-# main repo, re-clones enrol/workdaystudent and blocks/wdsprefs so pull never aborts.
+# Replaces default git pull in the Moodle container: skip-worktree + remove blocks/ues_people
+# so merge succeeds (name clash with block_lsu_people); then merges main repo.
 # Usage: moodle-pull [remote [branch]]   (default: origin develop)
 set -e
 
@@ -11,14 +11,10 @@ cd /var/www/html || exit 1
 
 git config --add safe.directory /var/www/html 2>/dev/null || true
 git ls-files blocks/ues_people 2>/dev/null | xargs -r git update-index --skip-worktree 2>/dev/null || true
-rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people
+rm -rf blocks/ues_people
 git fetch "$REMOTE" "$BRANCH"
 git merge "$REMOTE/$BRANCH"
 git ls-files blocks/ues_people 2>/dev/null | xargs -r git update-index --skip-worktree 2>/dev/null || true
-rm -rf enrol/workdaystudent blocks/wdsprefs blocks/ues_people
-su -s /bin/sh www-data -c "cd /var/www/html && git clone https://github.com/lsuonline/moodle-enrol_workdaystudent.git enrol/workdaystudent && git clone https://github.com/lsuonline/moodle-block_wdsprefs.git blocks/wdsprefs"
-chown -R www-data:www-data enrol/workdaystudent blocks/wdsprefs
+rm -rf blocks/ues_people
 git update-index --skip-worktree config.php 2>/dev/null || true
-git config --global --add safe.directory /var/www/html/enrol/workdaystudent 2>/dev/null || true
-git config --global --add safe.directory /var/www/html/blocks/wdsprefs 2>/dev/null || true
-echo "Done. Main repo and plugin clones updated."
+echo "Done. Main repo updated."
