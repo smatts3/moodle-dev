@@ -106,7 +106,7 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 | Script | Role |
 |--------|------|
 | `cleandev/submodulize.sh` | Vendored trees → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` passed via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
-| `cleandev/unsubmodulize.sh` | Submodules → vendored trees (clone depth 1, drop nested `.git`, `git add`). **Does not** yet inject `GITHUB_TOKEN` the same way as `submodulize.sh` for private HTTPS—use `--ssh` or credentials. |
+| `cleandev/unsubmodulize.sh` | Submodules → vendored trees (clone depth 1, drop nested `.git`, `git add`). Uses the same `GITHUB_TOKEN` `-c url...insteadOf` for `ls-remote` / `clone` as `submodulize.sh`, or `--ssh`. |
 
 Run manually from a Moodle clone:
 

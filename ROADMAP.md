@@ -16,7 +16,7 @@ Progress toward **seamless `develop` ↔ `cleandev`** (on [lsuce-moodle](https:/
 
 - [ ] **Commit portability:** Script or documented workflow to **replay or port commits** across layouts with a **header** noting the original commit (and branch/repo). *Not in repo today—only bulk layout conversion exists.*
 - [ ] **`new.sh` / tooling:** Detect or select **vendored vs submodulized** Moodle tree so one flow works without guessing flags.
-- [ ] **`unsubmodulize.sh`:** Same `GITHUB_TOKEN` `-c url.insteadOf` pattern as `submodulize.sh` for private HTTPS (parity with submodule add).
+- [x] **`unsubmodulize.sh`:** Same `GITHUB_TOKEN` `-c url.insteadOf` pattern as `submodulize.sh` for private HTTPS (parity with submodule add).
 - [ ] **Monorepo manifest + scripts:** Support “clone once, map subpaths”, or publish **one-shot manual procedures** for commented monorepo lines.
 - [ ] **Manifest regeneration:** Re-add or document regeneration from the source CSV inventory (a one-off generator was removed).
 - [ ] **`local/ml`:** Point at the correct Git remote when known; uncomment or add manifest line.

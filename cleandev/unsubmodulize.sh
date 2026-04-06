@@ -6,7 +6,9 @@
 # Usage:
 #   ./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
 #
-# Use --ssh when HTTPS clones fail for private github.com repos (same as submodulize.sh).
+# Private GitHub repos over HTTPS: set GITHUB_TOKEN (PAT) so ls-remote / clone use
+#   -c url.https://TOKEN@github.com/.insteadOf=https://github.com/
+# (same as submodulize.sh). Or use --ssh.
 
 set -euo pipefail
 
@@ -31,7 +33,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      sed -n '1,22p' "$0"
+      sed -n '1,25p' "$0"
       exit 0
       ;;
     *)
@@ -76,6 +78,12 @@ disable_sparse_checkout_if_needed() {
 }
 
 disable_sparse_checkout_if_needed
+
+# Extra -c flags so clone honors GitHub PAT (superproject local url.insteadOf is not always used here).
+git_github_pat_c=()
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  git_github_pat_c+=(-c "url.https://${GITHUB_TOKEN}@github.com/.insteadOf=https://github.com/")
+fi
 
 rewrite_github_url_to_ssh() {
   local u="$1"
@@ -123,11 +131,11 @@ while IFS='|' read -r raw_path raw_url raw_branch; do
 
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/unsubmodulize.XXXXXX")"
   trap 'rm -rf "$tmp"' EXIT
-  if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
-    GIT_TERMINAL_PROMPT=0 git clone --depth 1 -b "$branch" -- "$url" "$tmp/clone"
+  if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
+    GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --depth 1 -b "$branch" -- "$url" "$tmp/clone"
   else
     [[ -n "$branch" ]] && echo "Remote has no branch '$branch' for $path; cloning default branch." >&2
-    GIT_TERMINAL_PROMPT=0 git clone --depth 1 -- "$url" "$tmp/clone"
+    GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --depth 1 -- "$url" "$tmp/clone"
   fi
   git submodule deinit -f -- "$path"
   git rm -f --sparse -- "$path" 2>/dev/null || git rm -f -- "$path"
