@@ -11,6 +11,7 @@ Progress toward **seamless `develop` ↔ `cleandev`** (on [lsuce-moodle](https:/
 - [x] Sparse-checkout disabled in both scripts before mutating plugin paths
 - [x] `blocks/ues_people` handling in `new.sh` and `config/moodle-pull` (merge / pull alias)
 - [x] Git ignore for `cleandev/.github-token`
+- [x] **Team process, image strategy, manifest-from-CSV docs:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md)
 
 ## TODO
 
@@ -18,12 +19,11 @@ Progress toward **seamless `develop` ↔ `cleandev`** (on [lsuce-moodle](https:/
 - [ ] **`new.sh` / tooling:** Detect or select **vendored vs submodulized** Moodle tree so one flow works without guessing flags.
 - [x] **`unsubmodulize.sh`:** Same `GITHUB_TOKEN` `-c url.insteadOf` pattern as `submodulize.sh` for private HTTPS (parity with submodule add).
 - [ ] **Monorepo manifest + scripts:** Support “clone once, map subpaths”, or publish **one-shot manual procedures** for commented monorepo lines.
-- [ ] **Manifest regeneration:** Re-add or document regeneration from the source CSV inventory (a one-off generator was removed).
 - [ ] **`local/ml`:** Point at the correct Git remote when known; uncomment or add manifest line.
-- [ ] **Image strategy:** Either stay on the local Dockerfile long-term or publish an `lsuonline/moodle-dev` (or similar) tag that tracks supported PHP for Moodle 4.5.
-- [ ] **Team process:** Written branch policy for switching default work from **develop** to **cleandev** (merge order, what gets pushed where, submodule publish rules).
 - [ ] **Optional CI:** Check that manifest paths still match **lsuce-moodle** `develop` plugin layout when plugins move.
 
 ---
+
+For branch policy, when to use `new.sh --submodulize`, image strategy, and refreshing `plugin-submodules.manifest` from the CSV, see [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
 
 For a concise summary of flags and auth behavior, see comments at the top of `cleandev/submodulize.sh` and `cleandev/unsubmodulize.sh`.

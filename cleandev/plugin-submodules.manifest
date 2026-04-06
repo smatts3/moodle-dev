@@ -5,6 +5,7 @@
 #
 # Synced from repo CSV: Evaluation of LSU moodle messy plugins(List) (3).csv
 # Custom URL preferred over third-party when both are set.
+# How to refresh from CSV and team policy: cleandev/TEAM-PROCESS.md
 #
 # --- One repo per path (compatible with submodulize.sh / unsubmodulize.sh) ---
 

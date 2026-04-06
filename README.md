@@ -90,6 +90,8 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 
 **Current repo state:** This project ships **one-shot layout converters** (`submodulize.sh` / `unsubmodulize.sh`). It does **not** yet implement commit-by-commit replay, automatic provenance headers, or a `new.sh` mode that detects vendored vs submodulized state without manual choice.
 
+**Branch policy, Docker image decision, and updating the manifest from the CSV:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
+
 # Submodule tooling (`cleandev/`)
 
 ## Manifest (`cleandev/plugin-submodules.manifest`)
