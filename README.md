@@ -1,5 +1,6 @@
 # LSU Moodle dev / test environment
-This will create a docker stack for LSU's moodle for you to access locally and develop / test in.
+
+This repo drives local Moodle stacks (Docker Compose + Traefik), mainly via `new.sh`. The running app is a clone of **[lsuonline/lsuce-moodle](https://github.com/lsuonline/lsuce-moodle)** inside the web container—not this repository’s tree.
 
 # Requirements
 
@@ -8,9 +9,10 @@ UNIX environment, Linux / Mac preferred.
 ## Linux / MacOS
 
 - Docker
-- Docker Compose 
+- Docker Compose
 
 ## Windows
+
 - Docker Desktop (or docker / docker compose)
 - Git Bash (or MINGW)
 
@@ -22,34 +24,108 @@ The format is `COMPONENT`|`NAME`|`VALUE`. One per line. See `confidential.templa
 
 # Usage
 
-On Windows, make sure docker desktop is running. 
+On Windows, make sure docker desktop is running.
 
 1. To launch a new instance of a dev environment, in a bash terminal run:
 
-		new.sh [NAME]
-	
-	Where NAME is an optional branch name (eg. new_widget, fix_login)
+   ```bash
+   new.sh [NAME]
+   ```
 
-	If NAME isn't supplied, a random 4 character name will be chosen (eg. e92d)
+   Where `NAME` is an optional compose project name (e.g. `new_widget`, `fix_login`). If omitted, a random 4-character name is used (e.g. `e92d`).
 
-1. If successful, you can access the site at http://moodle.NAME.localhost
+1. If successful, you can access the site at `http://moodle.NAME.localhost` (with Traefik / `TRAEFIK_HOST` as configured).
 
-1. You can use a terminal within the container by doing:
+1. Open a shell in the Moodle container:
 
-		MSYS_NO_PATHCONV=1 docker exec -it {NAME}-moodle /bin/bash
+   ```bash
+   MSYS_NO_PATHCONV=1 docker exec -it {NAME}-moodle /bin/bash
+   ```
 
-1. You can edit code using VSCode with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension and opening /var/www/html
+1. You can edit code with VS Code [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and open `/var/www/html` (or attach to the container).
 
-1. Use git within the container itself
+1. Use Git **inside the container** for Moodle/plugin work (`/var/www/html`).
 
-1. When done, clean up the stack with:
+1. Tear down the stack:
 
-		docker compose -p {NAME} down
+   ```bash
+   docker compose -p {NAME} down
+   ```
 
-	Or you can delete the stack in docker desktop.
+   Or remove the stack from Docker Desktop.
+
+### Optional: submodules after merge
+
+To convert vendored plugin directories in the container to Git submodules (see **lsuce-moodle branches** below):
+
+```bash
+./new.sh NAME --submodulize
+```
+
+GitHub auth for private `lsuonline/*` repos: `GITHUB_TOKEN` or `GH_TOKEN`, file `cleandev/.github-token` (gitignored), interactive prompt when run in a TTY, or `SUBMODULIZE_SSH=1` if SSH works inside the container.
 
 # Build
 
-You probably won't need to build. Images by default are pulled from docker hub (or soon from a private repo). To generate a new build image do:
+By default, `docker-compose.yml` **builds** the web image from `./Dockerfile` (`php:8.3-apache`) and tags it as `lsuce-moodle-web:local`. That avoids PHP 8.4 + Moodle 4.5 CLI issues noted in `docker-compose.yml`. To use a pre-built image instead, follow the comment in `docker-compose.yml` (`image:` vs `build:`).
 
-	docker build -t lsuonline/moodle-dev:latest .
+To build the legacy Hub-oriented image name (used by `build.sh`):
+
+```bash
+docker build -t lsuonline/moodle-dev:latest .
+```
+
+# lsuce-moodle: `develop` vs `cleandev`
+
+These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in *this* repo.
+
+| Branch | Layout |
+|--------|--------|
+| **develop** | Plugins **vendored** (plain files committed in the monorepo). This is what most developers use today. |
+| **cleandev** | Same plugins as **submodules** (per `.gitmodules` + manifest), for cleaner boundaries and per-plugin Git history. |
+
+**Goal (not fully implemented):** Devs can move to **cleandev** as the primary line of work, while **develop** stays mergeable. That requires agreed process and/or automation for:
+
+- Porting changes **both ways** (submodule layout ↔ vendored layout).
+- **Redoing or replaying commits** with a **provenance note** (e.g. original commit SHA / branch)—so history stays traceable across layouts.
+
+**Current repo state:** This project ships **one-shot layout converters** (`submodulize.sh` / `unsubmodulize.sh`). It does **not** yet implement commit-by-commit replay, automatic provenance headers, or a `new.sh` mode that detects vendored vs submodulized state without manual choice.
+
+**Branch policy, Docker image decision, and updating the manifest from the CSV:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
+
+# Submodule tooling (`cleandev/`)
+
+## Manifest (`cleandev/plugin-submodules.manifest`)
+
+- Format: `relative_path|clone_url|branch` (e.g. `mod/hvp|https://github.com/...|main`). Lines starting with `#` are ignored.
+- If the third field is empty, scripts default the branch to `main`; if `refs/heads/<branch>` is missing on the remote, they omit `-b` and use the remote’s default branch.
+- **Active lines:** one Git repo root per Moodle path (works with `git submodule add` and shallow clone + copy).
+- **Commented “monorepos”:** same URL, multiple top-level Moodle paths. Today’s scripts cannot express “clone once, map subpaths”; those stay vendored or need manual handling until manifest/script support exists.
+- **Commented “no clone” / bad remote:** e.g. `local/ml` where inventory pointed at a wrong/404 repo—left vendored until a real remote exists.
+- **Commented “no https URL”:** no usable URL in source inventory.
+
+## Scripts
+
+| Script | Role |
+|--------|------|
+| `cleandev/submodulize.sh` | Vendored trees → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` passed via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
+| `cleandev/unsubmodulize.sh` | Submodules → vendored trees (clone depth 1, drop nested `.git`, `git add`). Uses the same `GITHUB_TOKEN` `-c url...insteadOf` for `ls-remote` / `clone` as `submodulize.sh`, or `--ssh`. |
+
+Run manually from a Moodle clone:
+
+```bash
+./cleandev/submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+```
+
+## Container startup (`new.sh`)
+
+- Compose project name = first argument (containers `{NAME}-moodle`, etc.).
+- Web service builds from `.` per `docker-compose.yml`.
+- As `www-data`: `git fetch` / `git merge origin/develop`; removes `blocks/ues_people` and uses `skip-worktree` so it does not clash with `block_lsu_people` (see `config/moodle-pull` for the same idea on `git pull`).
+- With `--submodulize`: copies `submodulize.sh` + manifest into the container, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `submodulize.sh --repo /var/www/html ... --no-commit` (optional SSH via `SUBMODULIZE_SSH=1`).
+
+Secrets: `cleandev/.github-token` is listed in `.gitignore`.
+
+# Roadmap
+
+Done items, TODOs, and progress toward seamless **`develop` ↔ `cleandev`** on lsuce-moodle: see **[ROADMAP.md](ROADMAP.md)**.
