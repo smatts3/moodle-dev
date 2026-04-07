@@ -117,6 +117,12 @@ Run manually from a Moodle clone:
 ./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
 ```
 
+Automated tests (manifest lint, PAT wiring checks, `submodulize`/`unsubmodulize` round-trip in temp repos—no changes to your working tree):
+
+```bash
+bash cleandev/tests/run.sh
+```
+
 ## Container startup (`new.sh`)
 
 - Compose project name = first argument (containers `{NAME}-moodle`, etc.).

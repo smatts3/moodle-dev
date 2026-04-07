@@ -20,6 +20,7 @@ Progress toward **seamless `develop` ↔ `cleandev`** (on [lsuce-moodle](https:/
 - [x] **`unsubmodulize.sh`:** Same `GITHUB_TOKEN` `-c url.insteadOf` pattern as `submodulize.sh` for private HTTPS (parity with submodule add).
 - [ ] **Monorepo manifest + scripts:** Support “clone once, map subpaths”, or publish **one-shot manual procedures** for commented monorepo lines.
 - [ ] **`local/ml`:** Point at the correct Git remote when known; uncomment or add manifest line.
+- [x] **CI (cleandev):** GitHub Actions runs `cleandev/tests/run.sh` (manifest lint, round-trip integration tests, shellcheck on Ubuntu).
 - [ ] **Optional CI:** Check that manifest paths still match **lsuce-moodle** `develop` plugin layout when plugins move.
 
 ---
