@@ -168,6 +168,7 @@ while [[ $# -gt 0 ]]; do
         -h --help        Shows this text.
         -s --skip        Skip automatic Moodle installation.
         --submodulize    After merge, use cleandev/submodulize.sh for manifest plugins (submodules).
+                         Safe on cleandev-style trees: paths already in .gitmodules are skipped (no bulk no-op run).
                          GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file cleandev/.github-token,
                          or an interactive prompt (first run) saves the token there (gitignored). Alternatively
                          SUBMODULIZE_SSH=1 with SSH usable inside the container.";
@@ -208,15 +209,16 @@ BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 # with block_lsu_people). skip-worktree on ues_people and config.php for a clean git status after startup.
 # enrol/workdaystudent and blocks/wdsprefs come from the lsuce-moodle tree (or --submodulize manifest).
 if [ "$SUBMODULIZE" = true ]; then
-  if [ ! -f "${PROJECT_ROOT}/cleandev/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest" ]; then
-    echo "new.sh --submodulize requires cleandev/submodulize.sh and cleandev/plugin-submodules.manifest next to new.sh." >&2
+  if [ ! -f "${PROJECT_ROOT}/cleandev/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/manifest-submodulize-redundant.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest" ]; then
+    echo "new.sh --submodulize requires cleandev/submodulize.sh, cleandev/manifest-submodulize-redundant.sh, and cleandev/plugin-submodules.manifest next to new.sh." >&2
     exit 1
   fi
   resolve_submod_github_token
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/manifest-submodulize-redundant.sh")" "${NAME}-moodle:/tmp/manifest-submodulize-redundant.sh"
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
   # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted"
-  MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/plugin-submodules.manifest'
+  MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest'
   submod_docker_env=(-u www-data)
   if [ -n "$SUBMOD_GIT_TOKEN" ]; then
     submod_docker_env+=(-e "GITHUB_TOKEN=${SUBMOD_GIT_TOKEN}")
@@ -224,20 +226,25 @@ if [ "$SUBMODULIZE" = true ]; then
   if [ "${SUBMODULIZE_SSH:-}" = "1" ]; then
     submod_docker_env+=(-e "SUBMODULIZE_USE_SSH=1")
   fi
-  MSYS_NO_PATHCONV=1 docker exec "${submod_docker_env[@]}" "${NAME}-moodle" sh -c '
-    cd /var/www/html && \
-    git config --add safe.directory /var/www/html && \
-    if [ -n "${GITHUB_TOKEN:-}" ]; then \
-      git config --local url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; \
-    fi && \
-    rm -rf blocks/ues_people && \
-    git fetch origin develop && \
-    git merge origin/develop && \
-    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
-    rm -rf blocks/ues_people && \
-    SMF="--no-commit" && \
-    if [ "${SUBMODULIZE_USE_SSH:-}" = "1" ]; then SMF="$SMF --ssh"; fi && \
-    bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest $SMF && \
+  MSYS_NO_PATHCONV=1 docker exec "${submod_docker_env[@]}" "${NAME}-moodle" bash -c '
+    set -euo pipefail
+    cd /var/www/html
+    git config --add safe.directory /var/www/html
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      git config --local url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+    fi
+    rm -rf blocks/ues_people
+    git fetch origin develop
+    git merge origin/develop
+    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree
+    rm -rf blocks/ues_people
+    SMF="--no-commit"
+    if [ "${SUBMODULIZE_USE_SSH:-}" = "1" ]; then SMF="$SMF --ssh"; fi
+    if bash /tmp/manifest-submodulize-redundant.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest; then
+      echo "new.sh: All manifest plugin paths are already submodules; skipping submodulize.sh."
+    else
+      bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest $SMF
+    fi
     git update-index --skip-worktree config.php
   '
 else

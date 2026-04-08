@@ -15,5 +15,5 @@ fi
 
 # Run from this directory so `source=lib.sh` directives resolve (shellcheck -x).
 cd "$SCRIPT_DIR"
-shellcheck -x lib.sh run.sh test-*.sh ../submodulize.sh ../unsubmodulize.sh
+shellcheck -x lib.sh run.sh test-*.sh ../submodulize.sh ../unsubmodulize.sh ../manifest-submodulize-redundant.sh
 ok "shellcheck"
