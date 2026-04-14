@@ -20,7 +20,7 @@
 # Requires bash (arrays, pipefail). Do not run as `sh this-script.sh`; use `bash` or execute directly.
 
 if [ -z "${BASH_VERSION:-}" ]; then
-  printf '%s: requires bash, not sh. Example: bash %q "$@"\n' "${0##*/}" "$0" >&2
+  printf '%s: requires bash, not sh. Example: bash "%s" ./ ...your args...\n' "${0##*/}" "$0" >&2
   exit 1
 fi
 
