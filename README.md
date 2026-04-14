@@ -88,7 +88,7 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 - Porting changes **both ways** (submodule layout ↔ vendored layout).
 - **Redoing or replaying commits** with a **provenance note** (e.g. original commit SHA / branch)—so history stays traceable across layouts.
 
-**Current repo state:** This project ships **one-shot layout converters** (`submodulize.sh` / `unsubmodulize.sh`). It does **not** yet implement commit-by-commit replay, automatic provenance headers, or a `new.sh` mode that detects vendored vs submodulized state without manual choice.
+**Current repo state:** This project ships **layout converters** (`submodulize.sh` / `unsubmodulize.sh`). **Replay is the default:** they build `submodulized` / `unsubmodulized` branches with **one superproject commit per plugin-repo commit** (chronological ordering, carry-forward; **`--fork-point`** required). Use **`--no-replay`** for one-shot conversion over the manifest only. A `new.sh` mode that detects vendored vs submodulized state without manual choice is still not implemented.
 
 **Branch policy, Docker image decision, and updating the manifest from the CSV:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
 
@@ -109,14 +109,14 @@ This repo keeps a **canonical copy** under `cleandev/` for linting and for `new.
 
 | Script | Role |
 |--------|------|
-| `cleandev/submodulize.sh` | Vendored trees → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` passed via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
-| `cleandev/unsubmodulize.sh` | Submodules → vendored trees (clone depth 1, drop nested `.git`, `git add`). Uses the same `GITHUB_TOKEN` `-c url...insteadOf` for `ls-remote` / `clone` as `submodulize.sh`, or `--ssh`. |
+| `cleandev/submodulize.sh` | Default **replay** (`--fork-point`): one superproject commit per plugin commit (gitlinks + `.gitmodules`). **`--no-replay`**: one-shot vendored → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
+| `cleandev/unsubmodulize.sh` | Default **replay** (`--fork-point`): one superproject commit per plugin commit (vendored trees). **`--no-replay`**: one-shot submodules → vendored (clone depth 1, drop nested `.git`, `git add`). Same `GITHUB_TOKEN` / `--ssh` as `submodulize.sh`. |
 
 Run manually from a Moodle clone:
 
 ```bash
-./cleandev/submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
-./cleandev/unsubmodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+./cleandev/submodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+./cleandev/unsubmodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
 ```
 
 Automated tests (manifest lint, PAT wiring checks, `submodulize`/`unsubmodulize` round-trip in temp repos—no changes to your working tree):
@@ -130,7 +130,7 @@ bash cleandev/tests/run.sh
 - Compose project name = first argument (containers `{NAME}-moodle`, etc.).
 - Web service builds from `.` per `docker-compose.yml`.
 - As `www-data`: `git fetch` / `git merge origin/develop`; removes `blocks/ues_people` and uses `skip-worktree` so it does not clash with `block_lsu_people` (see `config/moodle-pull` for the same idea on `git pull`).
-- With `--submodulize`: copies scripts into the container, stages `cleandev/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
+- With `--submodulize`: copies scripts into the container, stages `cleandev/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh --no-replay` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
 
 Secrets: `cleandev/.github-token` is listed in `.gitignore`.
 

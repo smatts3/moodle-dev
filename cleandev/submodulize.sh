@@ -2,11 +2,15 @@
 # Convert vendored plugin directories (plain files in the Moodle superproject) into git submodules.
 # Intended for the submodule-layout Moodle checkout: keep plugin-submodules.manifest at the superproject
 # root (same repo as .gitmodules will live in). Run from inside that clone, or pass ROOT / --repo.
+# Default mode is replay: builds branch submodulized with one superproject commit per plugin-repo commit.
+# Use --no-replay for one-shot conversion (manifest loop only).
 #
 # Requires: git, a clean enough working tree (commit or stash first if paths are dirty).
 #
 # Usage:
 #   ./cleandev/submodulize.sh [ROOT] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+#   ./cleandev/submodulize.sh --fork-point BASE ...   # replay (default)
+#   ./cleandev/submodulize.sh --no-replay ...         # one-shot
 #   Bare ROOT is the same as --repo (optional; may appear before or after flags).
 #
 # Private GitHub repos over HTTPS need credentials. Set GITHUB_TOKEN (PAT) so HTTPS URLs are rewritten
@@ -21,6 +25,16 @@ DRY_RUN=false
 NO_COMMIT=false
 USE_SSH=false
 REPO_ROOT=""
+REPLAY=true
+FORK_POINT=""
+SOURCE_BRANCH="submodulized"
+TARGET_BRANCH="submodulized"
+REPLAY_ORDER="chronological"
+FORCE_REPLAY=false
+REPLAY_SOURCE_EXPLICIT=false
+REPLAY_TARGET_EXPLICIT=false
+REPLAY_ORDER_EXPLICIT=false
+declare -a PLUGIN_BASE_OVERRIDES=()
 
 usage() {
   cat <<'EOF'
@@ -38,9 +52,9 @@ Usage:
          bare path, and do not put a bare path after --repo (that is rejected).
 
 Examples:
-  submodulize.sh ~/workspace/moodle
-  submodulize.sh --dry-run ~/workspace/moodle
-  submodulize.sh ~/workspace/moodle --no-commit --ssh
+  submodulize.sh --no-replay ~/workspace/moodle
+  submodulize.sh --dry-run --no-replay ~/workspace/moodle
+  submodulize.sh --fork-point abc123 --source submodulized
 
 Options:
   --dry-run       Print actions without changing the repo
@@ -48,6 +62,16 @@ Options:
   --ssh           Use git@github.com URLs for github.com HTTPS entries
   --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
+
+Replay (default — one superproject commit per plugin-repo commit on --target; --fork-point required):
+  --no-replay           One-shot mode: add submodules per manifest (no branch replay)
+  --replay              Replay mode (default; explicit if you toggled --no-replay earlier on the command line)
+  --fork-point BASE     Start of replay (vendored plugin dirs and/or existing gitlinks)
+  --source BR           Branch whose tip supplies final submodule SHAs per path (default: submodulized)
+  --target BR           Branch to create/update (default: submodulized)
+  --order NAME          Only chronological
+  --force               Overwrite --target branch if it exists (replay only)
+  --plugin-base P=S     Optional start SHA for manifest path P
 
 Requires: git, and a clean enough working tree (commit or stash if plugin paths are dirty).
 
@@ -62,6 +86,35 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=true; shift ;;
     --no-commit) NO_COMMIT=true; shift ;;
     --ssh) USE_SSH=true; shift ;;
+    --no-replay) REPLAY=false; shift ;;
+    --replay) REPLAY=true; shift ;;
+    --fork-point)
+      FORK_POINT="${2:?}"
+      shift 2
+      ;;
+    --source)
+      SOURCE_BRANCH="${2:?}"
+      REPLAY_SOURCE_EXPLICIT=true
+      shift 2
+      ;;
+    --target)
+      TARGET_BRANCH="${2:?}"
+      REPLAY_TARGET_EXPLICIT=true
+      shift 2
+      ;;
+    --order)
+      REPLAY_ORDER="${2:?}"
+      REPLAY_ORDER_EXPLICIT=true
+      shift 2
+      ;;
+    --force)
+      FORCE_REPLAY=true
+      shift
+      ;;
+    --plugin-base)
+      PLUGIN_BASE_OVERRIDES+=("${2:?}")
+      shift 2
+      ;;
     --manifest)
       MANIFEST="${2:?}"
       MANIFEST_EXPLICIT=true
@@ -104,6 +157,42 @@ fi
 if [[ ! -f "$MANIFEST" ]]; then
   echo "Manifest not found: $MANIFEST" >&2
   exit 1
+fi
+
+if $REPLAY; then
+  [[ -n "$FORK_POINT" ]] || {
+    echo "Required: --fork-point BASE (replay is the default; use --no-replay for one-shot conversion without replay)" >&2
+    exit 1
+  }
+  [[ "$REPLAY_ORDER" == "chronological" ]] || {
+    echo "Only --order chronological is supported: $REPLAY_ORDER" >&2
+    exit 1
+  }
+else
+  [[ -z "$FORK_POINT" ]] || {
+    echo "--fork-point is only used in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
+  ((${#PLUGIN_BASE_OVERRIDES[@]} == 0)) || {
+    echo "--plugin-base is only valid in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
+  $FORCE_REPLAY && {
+    echo "--force is only valid in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
+  $REPLAY_SOURCE_EXPLICIT && {
+    echo "--source is only valid in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
+  $REPLAY_TARGET_EXPLICIT && {
+    echo "--target is only valid in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
+  $REPLAY_ORDER_EXPLICIT && {
+    echo "--order is only valid in replay mode (omit --no-replay)" >&2
+    exit 1
+  }
 fi
 
 cd "$REPO_ROOT"
@@ -155,6 +244,204 @@ run() {
     "$@"
   fi
 }
+
+submodulize_replay_mode() {
+  git rev-parse --verify "$FORK_POINT^{commit}" >/dev/null
+  git rev-parse --verify "$SOURCE_BRANCH^{commit}" >/dev/null
+
+  if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && ! $FORCE_REPLAY; then
+    echo "Branch $TARGET_BRANCH exists; pass --force" >&2
+    exit 1
+  fi
+
+  ls_path_mode_sha() {
+    git ls-tree "$1" -- "$2" 2>/dev/null | awk '{print $1 "\t" $3}' | head -n1
+  }
+
+  plugin_base_override_for() {
+    local want="$1" entry
+    for entry in "${PLUGIN_BASE_OVERRIDES[@]:-}"; do
+      [[ "${entry%%=*}" == "$want" ]] && { echo "${entry#*=}"; return 0; }
+    done
+    return 1
+  }
+
+  find_plugin_commit_for_tree() {
+    local pdir="$1" want_tree="$2" c t
+    while IFS= read -r c; do
+      t="$(git -C "$pdir" rev-parse "$c^{tree}" 2>/dev/null || true)"
+      [[ "$t" == "$want_tree" ]] && { echo "$c"; return 0; }
+    done < <(git -C "$pdir" rev-list --first-parent --reverse --all)
+    return 1
+  }
+
+  declare -a M_PATHS=() M_URLS=() M_BRANCHES=()
+
+  while IFS='|' read -r raw_path raw_url raw_branch; do
+    path="${raw_path#"${raw_path%%[![:space:]]*}"}"
+    path="${path%"${path##*[![:space:]]}"}"
+    url="${raw_url#"${raw_url%%[![:space:]]*}"}"
+    url="${url%"${url##*[![:space:]]}"}"
+    branch="${raw_branch#"${raw_branch%%[![:space:]]*}"}"
+    branch="${branch%"${branch##*[![:space:]]}"}"
+    [[ -z "$path" || "$path" =~ ^# ]] && continue
+    [[ -z "$url" ]] && { echo "Manifest: missing URL for $path" >&2; exit 1; }
+    [[ -z "$branch" ]] && branch="main"
+    M_PATHS+=("$path")
+    M_URLS+=("$url")
+    M_BRANCHES+=("$branch")
+  done < "$MANIFEST"
+
+  [[ ${#M_PATHS[@]} -gt 0 ]] || { echo "No manifest entries." >&2; exit 1; }
+
+  SOURCE_TIP="$(git rev-parse "$SOURCE_BRANCH^{commit}")"
+  TMPD="$(mktemp -d "${TMPDIR:-/tmp}/sub-replay.XXXXXX")"
+  trap 'rm -rf "$TMPD"' EXIT
+
+  declare -a EVENT_LINES=()
+
+  for i in "${!M_PATHS[@]}"; do
+    P="${M_PATHS[$i]}"
+    URL="$(rewrite_github_url_to_ssh "${M_URLS[$i]}")"
+    PDIR="$TMPD/plugin_${i}_$(echo "$P" | tr '/' '_')"
+
+    ms="$(ls_path_mode_sha "$FORK_POINT" "$P")"
+    mode="${ms%%$'\t'*}"
+    from_sha="${ms#*$'\t'}"
+
+    ms2="$(ls_path_mode_sha "$SOURCE_TIP" "$P")"
+    to_sha="${ms2#*$'\t'}"
+    mode2="${ms2%%$'\t'*}"
+
+    if [[ "$mode2" != "160000" ]] || [[ -z "$to_sha" ]]; then
+      echo "Path $P: source tip must be gitlink for end SHA" >&2
+      exit 1
+    fi
+
+    if ! plugin_base_override_for "$P" >/dev/null; then
+      if [[ "$mode" == "160000" && -n "$from_sha" ]]; then
+        :
+      elif [[ "$mode" == "040000" ]]; then
+        tr_sha="$(git rev-parse "$FORK_POINT:$P^{tree}" 2>/dev/null || true)"
+        if [[ -z "$tr_sha" ]]; then
+          echo "No tree at $FORK_POINT:$P" >&2
+          exit 1
+        fi
+        if [[ ! -d "$PDIR/.git" ]]; then
+          GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$URL" "$PDIR"
+        fi
+        from_sha="$(find_plugin_commit_for_tree "$PDIR" "$tr_sha")" || {
+          echo "Could not find plugin commit matching tree at $FORK_POINT:$P" >&2
+          exit 1
+        }
+      else
+        echo "Path $P at fork-point must be gitlink or directory; use --plugin-base ${P}=SHA" >&2
+        exit 1
+      fi
+    else
+      from_sha="$(plugin_base_override_for "$P")"
+    fi
+
+    if [[ ! -d "$PDIR/.git" ]]; then
+      GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$URL" "$PDIR"
+    fi
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q origin 2>/dev/null || true
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q "$URL" "+refs/*:refs/remotes/import/*" 2>/dev/null || true
+
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" cat-file -e "${from_sha}^{commit}" 2>/dev/null || {
+      echo "Missing plugin object $from_sha for $P" >&2
+      exit 1
+    }
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" cat-file -e "${to_sha}^{commit}" 2>/dev/null || {
+      echo "Missing plugin object $to_sha for $P" >&2
+      exit 1
+    }
+
+    mapfile -t PCOMMITS < <(GIT_TERMINAL_PROMPT=0 git -C "$PDIR" rev-list --first-parent --reverse "${from_sha}..${to_sha}")
+    [[ ${#PCOMMITS[@]} -eq 0 ]] && continue
+
+    for c in "${PCOMMITS[@]}"; do
+      ct="$(git -C "$PDIR" show -s --format=%ct "$c")"
+      EVENT_LINES+=("${ct}"$'\t'"${P}"$'\t'"${c}"$'\t'"${PDIR}"$'\t'"${M_URLS[$i]}")
+    done
+  done
+
+  [[ ${#EVENT_LINES[@]} -gt 0 ]] || { echo "No plugin commits to replay." >&2; exit 0; }
+
+  IFS=$'\n'
+  sorted="$(printf '%s\n' "${EVENT_LINES[@]}" | LC_ALL=C sort -t $'\t' -k1,1n -k2,2 -k3,3)"
+  unset IFS
+
+  if $DRY_RUN; then
+    echo "Planned ${#EVENT_LINES[@]} commits on $TARGET_BRANCH (from $FORK_POINT)"
+    while IFS=$'\t' read -r ct p sha pdir url; do
+      [[ -z "${ct:-}" ]] && continue
+      echo "  $ct  $p  $sha  ($(git -C "$pdir" show -s --format=%s "$sha"))"
+    done <<< "$sorted"
+    exit 0
+  fi
+
+  $FORCE_REPLAY && git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && git branch -D "$TARGET_BRANCH" 2>/dev/null || true
+  git worktree prune 2>/dev/null || true
+
+  WT="$TMPD/wt"
+  rm -rf "$WT"
+
+  manifest_url_for_path() {
+    local want="$1" _i
+    for _i in "${!M_PATHS[@]}"; do
+      if [[ "${M_PATHS[$_i]}" == "$want" ]]; then
+        echo "${M_URLS[$_i]}"
+        return 0
+      fi
+    done
+    return 1
+  }
+
+  rebuild_gitmodules() {
+    rm -f "$WT/.gitmodules"
+    git -C "$WT" ls-files -s | while read -r mode sha _st path; do
+      [[ "$mode" == "160000" ]] || continue
+      u="$(manifest_url_for_path "$path")" || continue
+      printf '[submodule "%s"]\n\tpath = %s\n\turl = %s\n' "$path" "$path" "$u" >>"$WT/.gitmodules"
+    done
+  }
+
+  GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" worktree add -B "$TARGET_BRANCH" "$WT" "$FORK_POINT" --force
+
+  while IFS=$'\t' read -r ct P csha pdir url; do
+    [[ -z "${ct:-}" ]] && continue
+    git -C "$WT" reset --hard -q HEAD
+    git -C "$WT" rm -rf --cached --ignore-unmatch "$P" 2>/dev/null || true
+    rm -rf "${WT:?}/${P}"
+    git -C "$WT" update-index --add --cacheinfo "160000,$csha,$P"
+    rebuild_gitmodules
+    git -C "$WT" add -f .gitmodules 2>/dev/null || true
+
+    an="$(git -C "$pdir" show -s --format=%an "$csha")"
+    ae="$(git -C "$pdir" show -s --format=%ae "$csha")"
+    adate="$(git -C "$pdir" show -s --format=%ai "$csha")"
+    body="$(git -C "$pdir" show -s --format=%B "$csha")"
+    {
+      printf '%s\n\n' "$body"
+      printf 'Replayed-from: %s\n' "$csha"
+      printf 'Plugin-path: %s\n' "$P"
+      printf 'gitlink: submodulize.sh (replay)\n'
+    } >"$TMPD/commitmsg.txt"
+
+    GIT_AUTHOR_NAME="$an" GIT_AUTHOR_EMAIL="$ae" GIT_AUTHOR_DATE="$adate" \
+      GIT_COMMITTER_NAME="$an" GIT_COMMITTER_EMAIL="$ae" GIT_COMMITTER_DATE="$adate" \
+      git -C "$WT" commit -F "$TMPD/commitmsg.txt"
+  done <<< "$sorted"
+
+  git -C "$REPO_ROOT" worktree remove -f "$WT" 2>/dev/null || true
+  echo "Done. Branch $TARGET_BRANCH -> $(git rev-parse "$TARGET_BRANCH")"
+}
+
+if $REPLAY; then
+  submodulize_replay_mode
+  exit 0
+fi
 
 manifest_entries=0
 while IFS='|' read -r raw_path raw_url raw_branch; do

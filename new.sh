@@ -167,7 +167,7 @@ while [[ $# -gt 0 ]]; do
     Options:
         -h --help        Shows this text.
         -s --skip        Skip automatic Moodle installation.
-        --submodulize    After merge, use cleandev/submodulize.sh for manifest plugins (submodules).
+        --submodulize    After merge, run cleandev/submodulize.sh --no-replay for manifest plugins (submodules).
                          Safe on cleandev-style trees: paths already in .gitmodules are skipped (no bulk no-op run).
                          GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file cleandev/.github-token,
                          or an interactive prompt (first run) saves the token there (gitignored). Alternatively
@@ -244,7 +244,7 @@ if [ "$SUBMODULIZE" = true ]; then
     if bash /tmp/manifest-submodulize-redundant.sh --repo /var/www/html; then
       echo "new.sh: All manifest plugin paths are already submodules; skipping submodulize.sh."
     else
-      bash /tmp/submodulize.sh --repo /var/www/html $SMF
+      bash /tmp/submodulize.sh --no-replay --repo /var/www/html $SMF
     fi
     git update-index --skip-worktree config.php
   '

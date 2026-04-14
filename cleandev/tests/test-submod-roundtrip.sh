@@ -30,13 +30,13 @@ git -C "$MOODLE" commit -q -m "vendored plugin"
 printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MOODLE/plugin-submodules.manifest"
 
 # --- dry-run must not convert ---
-"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --dry-run
+"$CLEANDEV/submodulize.sh" --no-replay --repo "$MOODLE" --dry-run
 assert_file "$MOODLE/mod/testplugin/local.txt"
 assert_no_file "$MOODLE/.gitmodules"
 assert_no_file "$MOODLE/.git/modules/mod/testplugin"
 
 # --- submodulize ---
-"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --no-commit
+"$CLEANDEV/submodulize.sh" --no-replay --repo "$MOODLE" --no-commit
 assert_file "$MOODLE/.gitmodules"
 assert_file "$MOODLE/mod/testplugin/version.txt"
 assert_no_file "$MOODLE/mod/testplugin/local.txt"
@@ -44,7 +44,7 @@ assert_no_file "$MOODLE/mod/testplugin/local.txt"
 git -C "$MOODLE" submodule status --recursive | grep -q 'mod/testplugin' || fail "expected mod/testplugin in submodule status"
 
 # --- unsubmodulize ---
-"$CLEANDEV/unsubmodulize.sh" --repo "$MOODLE" --no-commit
+"$CLEANDEV/unsubmodulize.sh" --no-replay --repo "$MOODLE" --no-commit
 assert_file "$MOODLE/mod/testplugin/version.txt"
 assert_no_file "$MOODLE/mod/testplugin/.git"
 # Git may leave an empty .gitmodules; ensure no submodule entries remain.

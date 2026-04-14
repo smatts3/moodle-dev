@@ -4,6 +4,8 @@ This document covers **branch policy** for [lsuce-moodle](https://github.com/lsu
 
 **Where the manifest lives:** On **cleandev**, treat `plugin-submodules.manifest` as part of the Moodle superproject (repo root), alongside `.gitmodules`. The copy in **this** repo under [`cleandev/plugin-submodules.manifest`](plugin-submodules.manifest) is the maintained source for CSV refresh and CI lint; `submodulize.sh` / `unsubmodulize.sh` default to `ROOT/plugin-submodules.manifest` unless you pass `--manifest`.
 
+**Branch replay (default):** `unsubmodulize.sh` and `submodulize.sh` run replay unless you pass **`--no-replay`**. Replay builds histories with **one Moodle superproject commit per plugin-repo commit** (chronological order, carry-forward). It requires `--fork-point` and defaults `--source` / `--target` branch names (`submodulized`, `unsubmodulized`). If the fork-point checkout is **vendored** at a manifest path, the script matches the embedded tree to a plugin commit (or use `--plugin-base path=SHA`). `new.sh --submodulize` runs **`submodulize.sh --no-replay`** (one-shot only).
+
 ---
 
 ## 1. Team process (develop ↔ cleandev)
@@ -30,7 +32,7 @@ This document covers **branch policy** for [lsuce-moodle](https://github.com/lsu
 ### Local Docker stack (`new.sh`)
 
 - **Without `--submodulize`:** Container tracks **vendored** layout after merge from `origin/develop` (matches **develop**).
-- **With `--submodulize`:** After that merge, runs `submodulize.sh` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `cleandev/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
+- **With `--submodulize`:** After that merge, runs `submodulize.sh --no-replay` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `cleandev/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
 - Never commit **`cleandev/.github-token`** (gitignored).
 
 ### Submodule hygiene
@@ -126,7 +128,7 @@ If the CSV has no working public URL (internal, defunct, empty), add or keep a *
 
 ### After editing the manifest
 
-1. Run **`submodulize.sh --dry-run`** from a **test clone** of lsuce-moodle to sanity-check paths and remotes.
+1. Run **`submodulize.sh --no-replay --dry-run`** from a **test clone** of lsuce-moodle to sanity-check paths and remotes.
 2. Commit manifest changes in **this** repo (`lsuce_moodle_project`) when the tooling repo owns the file; if the manifest is versioned only in lsuce-moodle, commit there per your layout.
 
 For script flags and `GITHUB_TOKEN` behavior, see the headers in `submodulize.sh` and `unsubmodulize.sh`.
