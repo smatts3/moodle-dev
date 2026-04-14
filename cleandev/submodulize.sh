@@ -34,7 +34,7 @@ USE_SSH=false
 REPO_ROOT=""
 REPLAY=true
 FORK_POINT=""
-SOURCE_BRANCH="submodulized"
+SOURCE_BRANCH=""
 TARGET_BRANCH="submodulized"
 REPLAY_ORDER="chronological"
 FORCE_REPLAY=false
@@ -70,11 +70,11 @@ Options:
   --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
 
-Replay (default — one superproject commit per plugin-repo commit on --target; --fork-point required):
+Replay (default — one superproject commit per plugin-repo commit on --target):
   --no-replay           One-shot mode: add submodules per manifest (no branch replay)
   --replay              Replay mode (default; explicit if you toggled --no-replay earlier on the command line)
-  --fork-point BASE     Start of replay (vendored plugin dirs and/or existing gitlinks)
-  --source BR           Branch whose tip supplies final submodule SHAs per path (default: submodulized)
+  --fork-point BASE     Start of replay (default: local master, else main, when omitted — see docs)
+  --source BR           End state per path (gitlinks and/or vendored trees; default: submodulized, else master, else main)
   --target BR           Branch to create/update (default: submodulized)
   --order NAME          Only chronological
   --force               Overwrite --target branch if it exists (replay only)
@@ -167,10 +167,6 @@ if [[ ! -f "$MANIFEST" ]]; then
 fi
 
 if $REPLAY; then
-  [[ -n "$FORK_POINT" ]] || {
-    echo "Required: --fork-point BASE (replay is the default; use --no-replay for one-shot conversion without replay)" >&2
-    exit 1
-  }
   [[ "$REPLAY_ORDER" == "chronological" ]] || {
     echo "Only --order chronological is supported: $REPLAY_ORDER" >&2
     exit 1
@@ -203,6 +199,51 @@ else
 fi
 
 cd "$REPO_ROOT"
+
+# When --fork-point is omitted in replay mode, default to local master (else main) if safe.
+if $REPLAY && [[ -z "$FORK_POINT" ]]; then
+  base_ref=""
+  if git show-ref --verify --quiet refs/heads/master; then
+    base_ref=master
+  elif git show-ref --verify --quiet refs/heads/main; then
+    base_ref=main
+  else
+    echo "Replay needs --fork-point (no local master or main branch to use as default)." >&2
+    exit 1
+  fi
+  head_sha="$(git rev-parse HEAD)"
+  master_sha="$(git rev-parse "${base_ref}^{commit}")"
+  target_exists=false
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && target_exists=true
+  if ! $target_exists; then
+    FORK_POINT="$base_ref"
+    echo "Default --fork-point $FORK_POINT ($TARGET_BRANCH does not exist yet)." >&2
+  else
+    target_sha="$(git rev-parse "$TARGET_BRANCH^{commit}")"
+    if [[ "$head_sha" == "$master_sha" ]] || [[ "$head_sha" == "$target_sha" ]]; then
+      FORK_POINT="$base_ref"
+      echo "Default --fork-point $FORK_POINT (HEAD is ${base_ref} or $TARGET_BRANCH)." >&2
+    else
+      FORK_POINT="$base_ref"
+      echo "Default --fork-point $FORK_POINT (recreating $TARGET_BRANCH from ${base_ref}; use --force if the branch already exists)." >&2
+    fi
+  fi
+fi
+
+# When --source is omitted in replay mode: prefer submodulized, else master, else main.
+if $REPLAY && ! $REPLAY_SOURCE_EXPLICIT; then
+  if git show-ref --verify --quiet refs/heads/submodulized; then
+    SOURCE_BRANCH=submodulized
+  elif git show-ref --verify --quiet refs/heads/master; then
+    SOURCE_BRANCH=master
+  elif git show-ref --verify --quiet refs/heads/main; then
+    SOURCE_BRANCH=main
+  else
+    echo "Replay: pass --source BR (no local submodulized, master, or main branch found)." >&2
+    exit 1
+  fi
+  echo "Default --source $SOURCE_BRANCH" >&2
+fi
 
 # Moodle dev images often use sparse-checkout (cone, index.sparse, or only .git/info/sparse-checkout).
 # If any of that is active, git rm / submodule add can refuse paths "outside" the cone.
@@ -320,8 +361,26 @@ submodulize_replay_mode() {
     to_sha="${ms2#*$'\t'}"
     mode2="${ms2%%$'\t'*}"
 
-    if [[ "$mode2" != "160000" ]] || [[ -z "$to_sha" ]]; then
-      echo "Path $P: source tip must be gitlink for end SHA" >&2
+    if [[ ! -d "$PDIR/.git" ]]; then
+      GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$URL" "$PDIR"
+    fi
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q origin 2>/dev/null || true
+    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q "$URL" "+refs/*:refs/remotes/import/*" 2>/dev/null || true
+
+    if [[ "$mode2" == "160000" && -n "$to_sha" ]]; then
+      :
+    elif [[ "$mode2" == "040000" ]]; then
+      tr_end="$(git rev-parse "$SOURCE_TIP:$P^{tree}" 2>/dev/null || true)"
+      if [[ -z "$tr_end" ]]; then
+        echo "No tree at $SOURCE_BRANCH:$P (source tip)" >&2
+        exit 1
+      fi
+      to_sha="$(find_plugin_commit_for_tree "$PDIR" "$tr_end")" || {
+        echo "Could not match plugin commit to vendored tree at $SOURCE_BRANCH:$P" >&2
+        exit 1
+      }
+    else
+      echo "Path $P: source tip must be gitlink or vendored directory for end SHA" >&2
       exit 1
     fi
 
@@ -334,9 +393,6 @@ submodulize_replay_mode() {
           echo "No tree at $FORK_POINT:$P" >&2
           exit 1
         fi
-        if [[ ! -d "$PDIR/.git" ]]; then
-          GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$URL" "$PDIR"
-        fi
         from_sha="$(find_plugin_commit_for_tree "$PDIR" "$tr_sha")" || {
           echo "Could not find plugin commit matching tree at $FORK_POINT:$P" >&2
           exit 1
@@ -348,12 +404,6 @@ submodulize_replay_mode() {
     else
       from_sha="$(plugin_base_override_for "$P")"
     fi
-
-    if [[ ! -d "$PDIR/.git" ]]; then
-      GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$URL" "$PDIR"
-    fi
-    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q origin 2>/dev/null || true
-    GIT_TERMINAL_PROMPT=0 git -C "$PDIR" fetch -q "$URL" "+refs/*:refs/remotes/import/*" 2>/dev/null || true
 
     GIT_TERMINAL_PROMPT=0 git -C "$PDIR" cat-file -e "${from_sha}^{commit}" 2>/dev/null || {
       echo "Missing plugin object $from_sha for $P" >&2

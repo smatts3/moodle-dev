@@ -88,7 +88,7 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 - Porting changes **both ways** (submodule layout ↔ vendored layout).
 - **Redoing or replaying commits** with a **provenance note** (e.g. original commit SHA / branch)—so history stays traceable across layouts.
 
-**Current repo state:** This project ships **layout converters** (`submodulize.sh` / `unsubmodulize.sh`). **Replay is the default:** they build `submodulized` / `unsubmodulized` branches with **one superproject commit per plugin-repo commit** (chronological ordering, carry-forward; **`--fork-point`** required). Use **`--no-replay`** for one-shot conversion over the manifest only. A `new.sh` mode that detects vendored vs submodulized state without manual choice is still not implemented.
+**Current repo state:** This project ships **layout converters** (`submodulize.sh` / `unsubmodulize.sh`). **Replay is the default:** they build `submodulized` / `unsubmodulized` branches with **one superproject commit per plugin-repo commit** (chronological ordering, carry-forward). **`--fork-point`** defaults to local **`master`** (else **`main`**) when omitted, if a default can be chosen safely; **`--source`** defaults for **unsub** to **`unsubmodulized`**, else **`master`**, else **`main`**, else **`submodulized`** (for **sub**: **`submodulized`**, **`master`**, **`main`**). Use **`--no-replay`** for one-shot conversion over the manifest only. A `new.sh` mode that detects vendored vs submodulized state without manual choice is still not implemented.
 
 **Branch policy, Docker image decision, and updating the manifest from the CSV:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
 
@@ -109,8 +109,8 @@ This repo keeps a **canonical copy** under `cleandev/` for linting and for `new.
 
 | Script | Role |
 |--------|------|
-| `cleandev/submodulize.sh` | Default **replay** (`--fork-point`): one superproject commit per plugin commit (gitlinks + `.gitmodules`). **`--no-replay`**: one-shot vendored → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
-| `cleandev/unsubmodulize.sh` | Default **replay** (`--fork-point`): one superproject commit per plugin commit (vendored trees). **`--no-replay`**: one-shot submodules → vendored (clone depth 1, drop nested `.git`, `git add`). Same `GITHUB_TOKEN` / `--ssh` as `submodulize.sh`. |
+| `cleandev/submodulize.sh` | Default **replay**; **`--fork-point`** defaults to `master`/`main` when omitted (see script help). **`--no-replay`**: one-shot vendored → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
+| `cleandev/unsubmodulize.sh` | Default **replay**; same **`--fork-point`** defaulting. **`--no-replay`**: one-shot submodules → vendored (clone depth 1, drop nested `.git`, `git add`). Same `GITHUB_TOKEN` / `--ssh` as `submodulize.sh`. |
 
 Run manually from a Moodle clone:
 
