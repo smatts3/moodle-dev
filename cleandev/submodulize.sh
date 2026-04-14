@@ -20,6 +20,29 @@ NO_COMMIT=false
 USE_SSH=false
 REPO_ROOT=""
 
+usage() {
+  cat <<'EOF'
+Convert vendored plugin directories in the Moodle repo into git submodules.
+Run from anywhere inside the Moodle clone (uses repo root unless --repo is set).
+
+Usage:
+  submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+
+Options:
+  --dry-run       Print actions without changing the repo
+  --no-commit     Stage submodule changes but do not commit
+  --ssh           Use git@github.com URLs for github.com HTTPS entries
+  --manifest PATH Use a manifest file (default: cleandev/plugin-submodules.manifest next to this script)
+  --repo ROOT     Moodle git root (default: git rev-parse --show-toplevel)
+
+Requires: git, and a clean enough working tree (commit or stash if plugin paths are dirty).
+
+Private GitHub over HTTPS: set GITHUB_TOKEN (PAT) so ls-remote / submodule add can authenticate,
+or use --ssh. Without credentials in non-interactive environments you may see:
+  could not read Username for 'https://github.com'
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=true; shift ;;
@@ -34,7 +57,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      sed -n '1,25p' "$0"
+      usage
       exit 0
       ;;
     *)
