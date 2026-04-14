@@ -72,7 +72,7 @@ Examples:
 
 Options:
   --dry-run       Print actions without changing the repo
-  --no-commit     Stage submodule changes but do not commit
+  --no-commit     Stage submodule changes but do not commit (bootstrap still commits the submodule layout so unsub replay can run)
   --ssh           Use git@github.com URLs for github.com HTTPS entries
   --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
@@ -448,7 +448,18 @@ submodulize_bootstrap_pipeline() {
 
   git checkout -B submodulized
 
+  # Unsub replay reads commit trees on --source; submodule adds must be committed so
+  # submodulized records 160000 gitlinks, not only the pre-submodule vendored tree.
+  local _saved_no_commit=false
+  if $NO_COMMIT; then
+    _saved_no_commit=true
+    echo "submodulize: bootstrap commits submodule layout on submodulized (required for unsub replay); ignoring --no-commit for this step." >&2
+    NO_COMMIT=false
+  fi
   submodulize_one_shot_apply_manifest
+  if $_saved_no_commit; then
+    NO_COMMIT=true
+  fi
 
   if $DRY_RUN; then
     exit 0
@@ -538,7 +549,7 @@ submodulize_replay_mode() {
     if [[ "$mode2" == "160000" && -n "$to_sha" ]]; then
       :
     elif [[ "$mode2" == "040000" ]]; then
-      tr_end="$(git rev-parse "$SOURCE_TIP:$P^{tree}" 2>/dev/null || true)"
+      tr_end="$(git rev-parse "$SOURCE_TIP:$P" 2>/dev/null || true)"
       if [[ -z "$tr_end" ]]; then
         echo "No tree at $SOURCE_BRANCH:$P (source tip)" >&2
         exit 1
@@ -556,7 +567,7 @@ submodulize_replay_mode() {
       if [[ "$mode" == "160000" && -n "$from_sha" ]]; then
         :
       elif [[ "$mode" == "040000" ]]; then
-        tr_sha="$(git rev-parse "$FORK_POINT:$P^{tree}" 2>/dev/null || true)"
+        tr_sha="$(git rev-parse "$FORK_POINT:$P" 2>/dev/null || true)"
         if [[ -z "$tr_sha" ]]; then
           echo "No tree at $FORK_POINT:$P" >&2
           exit 1

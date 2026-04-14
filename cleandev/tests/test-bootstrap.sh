@@ -16,13 +16,16 @@ PLUGIN="$TMP/plugin-upstream"
 MOODLE="$TMP/moodle"
 mkdir -p "$PLUGIN"
 git -C "$PLUGIN" init -b main
+git -C "$PLUGIN" config core.autocrlf false
 echo "plug=1" > "$PLUGIN/version.txt"
 git -C "$PLUGIN" add version.txt
 git -C "$PLUGIN" commit -q -m "init plugin"
 
 mkdir -p "$MOODLE/mod/testplugin"
 git -C "$MOODLE" init -b master
-echo "vendored-only" > "$MOODLE/mod/testplugin/local.txt"
+git -C "$MOODLE" config core.autocrlf false
+# Unpack from plugin so tree/blob IDs match plugin commits (avoids CRLF tree mismatch on Windows).
+git -C "$PLUGIN" archive HEAD | tar -x -C "$MOODLE/mod/testplugin"
 git -C "$MOODLE" add mod/testplugin
 git -C "$MOODLE" commit -q -m "vendored plugin"
 
@@ -33,7 +36,7 @@ printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MOODLE/plugin-submodu
 
 git -C "$MOODLE" show-ref --verify --quiet refs/heads/submodulized || fail "expected submodulized branch"
 git -C "$MOODLE" show-ref --verify --quiet refs/heads/unsubmodulized || fail "expected unsubmodulized branch"
-git -C "$MOODLE" ls-tree -r submodulized --name-only | grep -q '^mod/testplugin/version.txt$' || fail "expected submodule file on submodulized"
+git -C "$MOODLE" ls-tree submodulized mod/testplugin | grep -q '^160000' || fail "expected gitlink (submodule) at mod/testplugin on submodulized"
 git -C "$MOODLE" ls-tree -r unsubmodulized --name-only | grep -q '^mod/testplugin/version.txt$' || fail "expected vendored file on unsubmodulized"
 
 ok "submodulize bootstrap (auto when submodulized missing)"

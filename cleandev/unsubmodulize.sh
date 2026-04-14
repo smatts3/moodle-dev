@@ -375,7 +375,7 @@ unsubmodulize_replay_mode() {
     if [[ "$mode2" == "160000" && -n "$to_sha" ]]; then
       :
     elif [[ "$mode2" == "040000" ]]; then
-      tr_end="$(git rev-parse "$SOURCE_TIP:$P^{tree}" 2>/dev/null || true)"
+      tr_end="$(git rev-parse "$SOURCE_TIP:$P" 2>/dev/null || true)"
       if [[ -z "$tr_end" ]]; then
         echo "No tree at $SOURCE_BRANCH:$P (source tip)" >&2
         exit 1
@@ -394,7 +394,7 @@ unsubmodulize_replay_mode() {
     elif [[ "$mode" == "160000" && -n "$from_sha" ]]; then
       :
     elif [[ "$mode" == "040000" ]]; then
-      tr_sha="$(git rev-parse "$FORK_POINT:$P^{tree}" 2>/dev/null || true)"
+      tr_sha="$(git rev-parse "$FORK_POINT:$P" 2>/dev/null || true)"
       if [[ -z "$tr_sha" ]]; then
         echo "No tree at $FORK_POINT:$P" >&2
         exit 1
@@ -432,6 +432,15 @@ unsubmodulize_replay_mode() {
 
   if [[ ${#EVENT_LINES[@]} -eq 0 ]]; then
     echo "No plugin commits to replay." >&2
+    if $DRY_RUN; then
+      echo "Planned: branch $TARGET_BRANCH at $FORK_POINT (fork already matches submodule plugin SHAs)" >&2
+      exit 0
+    fi
+    if $FORCE_REPLAY && git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
+      git branch -D "$TARGET_BRANCH" 2>/dev/null || true
+    fi
+    git branch "$TARGET_BRANCH" "$FORK_POINT"
+    echo "Done. Branch $TARGET_BRANCH -> $(git rev-parse "$TARGET_BRANCH")"
     exit 0
   fi
 
