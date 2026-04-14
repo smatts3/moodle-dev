@@ -16,6 +16,13 @@
 # Private GitHub repos over HTTPS need credentials. Set GITHUB_TOKEN (PAT) so HTTPS URLs are rewritten
 # for ls-remote / submodule add (parent repo url.insteadOf is not always applied to submodule clone).
 # Or use --ssh. In Docker with no TTY you see: "could not read Username for 'https://github.com'".
+#
+# Requires bash (arrays, pipefail). Do not run as `sh this-script.sh`; use `bash` or execute directly.
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh. Example: bash %q "$@"\n' "${0##*/}" "$0" >&2
+  exit 1
+fi
 
 set -euo pipefail
 

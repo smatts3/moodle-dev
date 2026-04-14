@@ -16,6 +16,13 @@
 # Private GitHub repos over HTTPS: set GITHUB_TOKEN (PAT) so ls-remote / clone use
 #   -c url.https://TOKEN@github.com/.insteadOf=https://github.com/
 # (same as submodulize.sh). Or use --ssh.
+#
+# Requires bash (arrays, pipefail). Do not run as `sh this-script.sh`; use `bash` or execute directly.
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh. Example: bash %q "$@"\n' "${0##*/}" "$0" >&2
+  exit 1
+fi
 
 set -euo pipefail
 
