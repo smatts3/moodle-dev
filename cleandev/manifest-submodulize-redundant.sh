@@ -2,12 +2,14 @@
 # Exit 0 if running submodulize.sh would be a no-op: every active manifest path is already listed
 # in .gitmodules and .gitmodules is non-empty. Exit 1 otherwise (submodulize should run).
 # Used by new.sh --submodulize and cleandev/tests.
+# Default manifest: ROOT/plugin-submodules.manifest (same as submodulize.sh).
 #
-# Usage: ./cleandev/manifest-submodulize-redundant.sh --repo ROOT --manifest PATH
+# Usage: ./cleandev/manifest-submodulize-redundant.sh --repo ROOT [--manifest PATH]
 set -euo pipefail
 
 REPO_ROOT=""
 MANIFEST=""
+MANIFEST_EXPLICIT=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -17,10 +19,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --manifest)
       MANIFEST="${2:?}"
+      MANIFEST_EXPLICIT=true
       shift 2
       ;;
     -h|--help)
-      sed -n '1,12p' "$0"
+      sed -n '1,13p' "$0"
       exit 0
       ;;
     *)
@@ -30,10 +33,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$REPO_ROOT" && -n "$MANIFEST" ]] || {
-  echo "Usage: $0 --repo ROOT --manifest PATH" >&2
+[[ -n "$REPO_ROOT" ]] || {
+  echo "Usage: $0 --repo ROOT [--manifest PATH]" >&2
+  echo "  Default manifest: ROOT/plugin-submodules.manifest" >&2
   exit 2
 }
+
+if ! $MANIFEST_EXPLICIT; then
+  MANIFEST="${REPO_ROOT%/}/plugin-submodules.manifest"
+fi
+
 [[ -f "$MANIFEST" ]] || {
   echo "Manifest not found: $MANIFEST" >&2
   exit 2

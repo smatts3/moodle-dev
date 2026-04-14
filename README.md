@@ -96,6 +96,8 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 
 ## Manifest (`cleandev/plugin-submodules.manifest`)
 
+This repo keeps a **canonical copy** under `cleandev/` for linting and for `new.sh --submodulize` (copied into the Moodle tree at runtime). When you run `submodulize.sh` / `unsubmodulize.sh` against a checkout, the default manifest path is **`plugin-submodules.manifest` at the Moodle superproject root** (`--repo` / current directory), not next to the scripts; use `--manifest PATH` to override.
+
 - Format: `relative_path|clone_url|branch` (e.g. `mod/hvp|https://github.com/...|main`). Lines starting with `#` are ignored.
 - If the third field is empty, scripts default the branch to `main`; if `refs/heads/<branch>` is missing on the remote, they omit `-b` and use the remote’s default branch.
 - **Active lines:** one Git repo root per Moodle path (works with `git submodule add` and shallow clone + copy).
@@ -128,7 +130,7 @@ bash cleandev/tests/run.sh
 - Compose project name = first argument (containers `{NAME}-moodle`, etc.).
 - Web service builds from `.` per `docker-compose.yml`.
 - As `www-data`: `git fetch` / `git merge origin/develop`; removes `blocks/ues_people` and uses `skip-worktree` so it does not clash with `block_lsu_people` (see `config/moodle-pull` for the same idea on `git pull`).
-- With `--submodulize`: copies `submodulize.sh` + manifest into the container, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `submodulize.sh --repo /var/www/html ... --no-commit` (optional SSH via `SUBMODULIZE_SSH=1`).
+- With `--submodulize`: copies scripts into the container, stages `cleandev/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
 
 Secrets: `cleandev/.github-token` is listed in `.gitignore`.
 

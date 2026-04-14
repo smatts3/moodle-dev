@@ -31,10 +31,9 @@ git -C "$MOODLE" commit -q -m "init"
 git -C "$MOODLE" sparse-checkout init --cone
 git -C "$MOODLE" sparse-checkout set mod
 
-MANIFEST="$TMP/manifest.txt"
-printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MANIFEST"
+printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MOODLE/plugin-submodules.manifest"
 
-"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --manifest "$MANIFEST" --no-commit
+"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --no-commit
 
 assert_file "$MOODLE/mod/testplugin/a.txt"
 # submodulize disables the same flags it clears in disable_sparse_checkout_if_needed()

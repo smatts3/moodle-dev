@@ -2,6 +2,8 @@
 
 This document covers **branch policy** for [lsuce-moodle](https://github.com/lsuonline/lsuce-moodle), the **Docker image decision** for this repo, and **how to refresh** `plugin-submodules.manifest` from the plugin inventory CSV.
 
+**Where the manifest lives:** On **cleandev**, treat `plugin-submodules.manifest` as part of the Moodle superproject (repo root), alongside `.gitmodules`. The copy in **this** repo under [`cleandev/plugin-submodules.manifest`](plugin-submodules.manifest) is the maintained source for CSV refresh and CI lint; `submodulize.sh` / `unsubmodulize.sh` default to `ROOT/plugin-submodules.manifest` unless you pass `--manifest`.
+
 ---
 
 ## 1. Team process (develop ↔ cleandev)

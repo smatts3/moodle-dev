@@ -27,17 +27,16 @@ echo "vendored-only" > "$MOODLE/mod/testplugin/local.txt"
 git -C "$MOODLE" add mod/testplugin
 git -C "$MOODLE" commit -q -m "vendored plugin"
 
-MANIFEST="$TMP/manifest.txt"
-printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MANIFEST"
+printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MOODLE/plugin-submodules.manifest"
 
 # --- dry-run must not convert ---
-"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --manifest "$MANIFEST" --dry-run
+"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --dry-run
 assert_file "$MOODLE/mod/testplugin/local.txt"
 assert_no_file "$MOODLE/.gitmodules"
 assert_no_file "$MOODLE/.git/modules/mod/testplugin"
 
 # --- submodulize ---
-"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --manifest "$MANIFEST" --no-commit
+"$CLEANDEV/submodulize.sh" --repo "$MOODLE" --no-commit
 assert_file "$MOODLE/.gitmodules"
 assert_file "$MOODLE/mod/testplugin/version.txt"
 assert_no_file "$MOODLE/mod/testplugin/local.txt"
@@ -45,7 +44,7 @@ assert_no_file "$MOODLE/mod/testplugin/local.txt"
 git -C "$MOODLE" submodule status --recursive | grep -q 'mod/testplugin' || fail "expected mod/testplugin in submodule status"
 
 # --- unsubmodulize ---
-"$CLEANDEV/unsubmodulize.sh" --repo "$MOODLE" --manifest "$MANIFEST" --no-commit
+"$CLEANDEV/unsubmodulize.sh" --repo "$MOODLE" --no-commit
 assert_file "$MOODLE/mod/testplugin/version.txt"
 assert_no_file "$MOODLE/mod/testplugin/.git"
 # Git may leave an empty .gitmodules; ensure no submodule entries remain.
@@ -58,4 +57,4 @@ git -C "$MOODLE" ls-files --error-unmatch mod/testplugin/version.txt >/dev/null 
 ! git -C "$MOODLE" submodule status 2>/dev/null | grep -q 'mod/testplugin' \
   || fail "expected mod/testplugin not to remain a submodule after unsubmodulize"
 
-ok "submodulize <-> unsubmodulize round-trip (local relative URL)"
+ok "submodulize <-> unsubmodulize round-trip (default ROOT/plugin-submodules.manifest)"

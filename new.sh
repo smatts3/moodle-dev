@@ -238,12 +238,13 @@ if [ "$SUBMODULIZE" = true ]; then
     git merge origin/develop
     git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree
     rm -rf blocks/ues_people
+    cp /tmp/plugin-submodules.manifest /var/www/html/plugin-submodules.manifest
     SMF="--no-commit"
     if [ "${SUBMODULIZE_USE_SSH:-}" = "1" ]; then SMF="$SMF --ssh"; fi
-    if bash /tmp/manifest-submodulize-redundant.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest; then
+    if bash /tmp/manifest-submodulize-redundant.sh --repo /var/www/html; then
       echo "new.sh: All manifest plugin paths are already submodules; skipping submodulize.sh."
     else
-      bash /tmp/submodulize.sh --repo /var/www/html --manifest /tmp/plugin-submodules.manifest $SMF
+      bash /tmp/submodulize.sh --repo /var/www/html $SMF
     fi
     git update-index --skip-worktree config.php
   '

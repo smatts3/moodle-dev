@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Replace git submodules with plain tracked directories (vendored plugins), matching lsuce-moodle
-# develop style. Clones each plugin repo at the given branch, drops nested .git, and adds files
-# to the parent Moodle repository. Run from inside the clone, or pass the clone path as ROOT / --repo.
+# develop style. For the submodule-layout Moodle superproject: manifest and .gitmodules live in that
+# repo; this script reads plugin-submodules.manifest at the superproject root unless --manifest is set.
+# Clones each plugin repo at the given branch, drops nested .git, and adds files to the parent.
+# Run from inside the clone, or pass the clone path as ROOT / --repo.
 #
 # Usage:
 #   ./cleandev/unsubmodulize.sh [ROOT] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
@@ -13,8 +15,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANIFEST="${SCRIPT_DIR}/plugin-submodules.manifest"
+MANIFEST=""
+MANIFEST_EXPLICIT=false
 DRY_RUN=false
 NO_COMMIT=false
 USE_SSH=false
@@ -24,7 +26,8 @@ usage() {
   cat <<'EOF'
 Replace git submodules listed in the manifest with plain tracked directories (vendored plugins).
 For each entry: clones the plugin at the manifest branch, removes nested .git, deinits the submodule,
-and stages the tree in the parent Moodle repo.
+and stages the tree in the parent Moodle superproject (cleandev-style). The manifest normally lives
+at the superproject root as plugin-submodules.manifest.
 
 Moodle root defaults to the current directory’s git superproject (git rev-parse --show-toplevel), unless you set it explicitly.
 
@@ -45,7 +48,7 @@ Options:
   --dry-run       Print what would happen without changing the repo
   --no-commit     Stage vendored trees but do not commit
   --ssh           Use git@github.com URLs for github.com HTTPS entries
-  --manifest PATH Use a manifest file (default: cleandev/plugin-submodules.manifest next to this script)
+  --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
 
 Requires: git, and clean submodule working trees for paths being converted (no uncommitted changes inside submodules).
@@ -62,6 +65,7 @@ while [[ $# -gt 0 ]]; do
     --ssh) USE_SSH=true; shift ;;
     --manifest)
       MANIFEST="${2:?}"
+      MANIFEST_EXPLICIT=true
       shift 2
       ;;
     --repo)
@@ -87,16 +91,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! -f "$MANIFEST" ]]; then
-  echo "Manifest not found: $MANIFEST" >&2
-  exit 1
-fi
-
 if [[ -z "$REPO_ROOT" ]]; then
   REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
     echo "Not inside a git repository. Pass the Moodle root as a bare path or use --repo /path/to/moodle" >&2
     exit 1
   }
+fi
+
+if ! $MANIFEST_EXPLICIT; then
+  MANIFEST="${REPO_ROOT%/}/plugin-submodules.manifest"
+fi
+
+if [[ ! -f "$MANIFEST" ]]; then
+  echo "Manifest not found: $MANIFEST" >&2
+  exit 1
 fi
 
 cd "$REPO_ROOT"

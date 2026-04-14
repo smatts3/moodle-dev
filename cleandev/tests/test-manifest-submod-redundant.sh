@@ -10,7 +10,13 @@ REDUNDANT_SH="$CLEANDEV/manifest-submodulize-redundant.sh"
 assert_file "$REDUNDANT_SH"
 
 run_redundant() {
-  bash "$REDUNDANT_SH" --repo "$1" --manifest "$2"
+  local repo="$1"
+  local man="${2:-}"
+  if [[ -n "$man" ]]; then
+    bash "$REDUNDANT_SH" --repo "$repo" --manifest "$man"
+  else
+    bash "$REDUNDANT_SH" --repo "$repo"
+  fi
 }
 
 write_gitmodules() {
@@ -30,19 +36,21 @@ write_gitmodules() {
 }
 
 expect_redundant() {
-  local repo="$1" man="$2"
+  local repo="$1"
+  local man="${2:-}"
   if run_redundant "$repo" "$man"; then
     return 0
   fi
-  fail "expected exit 0 (submodulize redundant), got 1 — repo=$repo manifest=$man"
+  fail "expected exit 0 (submodulize redundant), got 1 — repo=$repo manifest=${man:-<default>}"
 }
 
 expect_not_redundant() {
-  local repo="$1" man="$2"
+  local repo="$1"
+  local man="${2:-}"
   if ! run_redundant "$repo" "$man"; then
     return 0
   fi
-  fail "expected exit 1 (submodulize needed), got 0 — repo=$repo manifest=$man"
+  fail "expected exit 1 (submodulize needed), got 0 — repo=$repo manifest=${man:-<default>}"
 }
 
 TMP_BASE="$(mktemp -d "${TMPDIR:-/tmp}/manifest-submod-redundant.XXXXXX")"
@@ -97,5 +105,15 @@ write_gitmodules "$R5" "mod/foo=https://example.com/foo.git"
 M5="$TMP_BASE/m5.manifest"
 printf '# only comments\n\n# foo\n' >"$M5"
 expect_not_redundant "$R5" "$M5"
+
+# --- default manifest at ROOT/plugin-submodules.manifest (no --manifest flag) ---
+R6="$TMP_BASE/r6"
+mkdir -p "$R6"
+git -C "$R6" init -q
+write_gitmodules "$R6" \
+  "mod/foo=https://example.com/foo.git" \
+  "blocks/bar=https://example.com/bar.git"
+printf 'mod/foo|https://example.com/foo.git|main\nblocks/bar|https://example.com/bar.git|main\n' >"$R6/plugin-submodules.manifest"
+expect_redundant "$R6"
 
 ok "manifest-submodulize-redundant.sh (skip vs run submodulize)"
