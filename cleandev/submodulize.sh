@@ -26,6 +26,8 @@ fi
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 MANIFEST=""
 MANIFEST_EXPLICIT=false
 DRY_RUN=false
@@ -41,6 +43,9 @@ FORCE_REPLAY=false
 REPLAY_SOURCE_EXPLICIT=false
 REPLAY_TARGET_EXPLICIT=false
 REPLAY_ORDER_EXPLICIT=false
+FORK_POINT_EXPLICIT=false
+BOOTSTRAP=false
+BOOTSTRAP_EXPLICIT=false
 declare -a PLUGIN_BASE_OVERRIDES=()
 
 usage() {
@@ -60,6 +65,8 @@ Usage:
 
 Examples:
   submodulize.sh --no-replay ~/workspace/moodle
+  submodulize.sh ./ --bootstrap
+  submodulize.sh ./   # same as --bootstrap when submodulized branch does not exist yet
   submodulize.sh --dry-run --no-replay ~/workspace/moodle
   submodulize.sh --fork-point abc123 --source submodulized
 
@@ -69,6 +76,10 @@ Options:
   --ssh           Use git@github.com URLs for github.com HTTPS entries
   --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
+
+Bootstrap (from vendored tree + manifest → submodulized + unsubmodulized):
+  --bootstrap           Add submodules on branch submodulized, then run unsubmodulize replay to create unsubmodulized.
+                        If local branch submodulized is missing, this runs automatically (same as passing --bootstrap).
 
 Replay (default — one superproject commit per plugin-repo commit on --target):
   --no-replay           One-shot mode: add submodules per manifest (no branch replay)
@@ -95,8 +106,15 @@ while [[ $# -gt 0 ]]; do
     --ssh) USE_SSH=true; shift ;;
     --no-replay) REPLAY=false; shift ;;
     --replay) REPLAY=true; shift ;;
+    --bootstrap)
+      BOOTSTRAP=true
+      BOOTSTRAP_EXPLICIT=true
+      REPLAY=false
+      shift
+      ;;
     --fork-point)
       FORK_POINT="${2:?}"
+      FORK_POINT_EXPLICIT=true
       shift 2
       ;;
     --source)
@@ -166,11 +184,45 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 1
 fi
 
+if $BOOTSTRAP_EXPLICIT; then
+  $FORK_POINT_EXPLICIT && {
+    echo "Do not combine --bootstrap with --fork-point (bootstrap records the current commit as the fork)." >&2
+    exit 1
+  }
+  $REPLAY_SOURCE_EXPLICIT && {
+    echo "Do not combine --bootstrap with --source (bootstrap uses submodulized → unsubmodulized)." >&2
+    exit 1
+  }
+  $REPLAY_TARGET_EXPLICIT && {
+    echo "Do not combine --bootstrap with --target." >&2
+    exit 1
+  }
+  $REPLAY_ORDER_EXPLICIT && {
+    echo "Do not combine --bootstrap with --order." >&2
+    exit 1
+  }
+  ((${#PLUGIN_BASE_OVERRIDES[@]} == 0)) || {
+    echo "--plugin-base is not used with --bootstrap." >&2
+    exit 1
+  }
+fi
+
+cd "$REPO_ROOT"
+
+# Greenfield: no submodulized branch yet — run bootstrap (one-shot + unsub replay) instead of sub replay.
+if $REPLAY && ! $FORK_POINT_EXPLICIT && ! $BOOTSTRAP_EXPLICIT && ! git show-ref --verify --quiet refs/heads/submodulized; then
+  BOOTSTRAP=true
+  REPLAY=false
+  echo "submodulize: no local branch submodulized — bootstrap (add submodules, then build unsubmodulized)." >&2
+fi
+
 if $REPLAY; then
   [[ "$REPLAY_ORDER" == "chronological" ]] || {
     echo "Only --order chronological is supported: $REPLAY_ORDER" >&2
     exit 1
   }
+elif $BOOTSTRAP; then
+  :
 else
   [[ -z "$FORK_POINT" ]] || {
     echo "--fork-point is only used in replay mode (omit --no-replay)" >&2
@@ -181,7 +233,7 @@ else
     exit 1
   }
   $FORCE_REPLAY && {
-    echo "--force is only valid in replay mode (omit --no-replay)" >&2
+    echo "--force is only valid in replay mode or bootstrap (omit --no-replay)" >&2
     exit 1
   }
   $REPLAY_SOURCE_EXPLICIT && {
@@ -197,8 +249,6 @@ else
     exit 1
   }
 fi
-
-cd "$REPO_ROOT"
 
 # When --fork-point is omitted in replay mode, default to local master (else main) if safe.
 if $REPLAY && [[ -z "$FORK_POINT" ]]; then
@@ -291,6 +341,124 @@ run() {
   else
     "$@"
   fi
+}
+
+submodulize_one_shot_apply_manifest() {
+  manifest_entries=0
+  while IFS='|' read -r raw_path raw_url raw_branch; do
+    path="${raw_path#"${raw_path%%[![:space:]]*}"}"
+    path="${path%"${path##*[![:space:]]}"}"
+    url="${raw_url#"${raw_url%%[![:space:]]*}"}"
+    url="${url%"${url##*[![:space:]]}"}"
+    branch="${raw_branch#"${raw_branch%%[![:space:]]*}"}"
+    branch="${branch%"${branch##*[![:space:]]}"}"
+
+    [[ -z "$path" || "$path" =~ ^# ]] && continue
+    [[ -z "$url" ]] && { echo "Manifest: missing URL for path $path" >&2; exit 1; }
+    [[ -z "$branch" ]] && branch="main"
+    url="$(rewrite_github_url_to_ssh "$url")"
+
+    ((++manifest_entries)) || true
+
+    if [[ -f .gitmodules ]] && git config -f .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | grep -Fxq "$path"; then
+      echo "Already a submodule (per .gitmodules): $path — skipping"
+      continue
+    fi
+
+    if [[ -d "$path/.git" ]] || [[ -f "$path/.git" ]]; then
+      echo "Path already looks like a nested git repo: $path" >&2
+      echo "  Remove or convert it manually, or run unsubmodulize first." >&2
+      exit 1
+    fi
+
+    if [[ -e "$path" ]] && ! $DRY_RUN; then
+      if ! git diff --quiet -- "$path" 2>/dev/null || ! git diff --cached --quiet -- "$path" 2>/dev/null; then
+        echo "Uncommitted changes under $path — commit or stash first." >&2
+        exit 1
+      fi
+    fi
+
+    echo "Submodulizing: $path ← $url (branch $branch)"
+
+    parent="$(dirname "$path")"
+    if [[ "$parent" != "." ]]; then
+      run mkdir -p "$parent"
+    fi
+
+    if [[ -n "$(git ls-files -- "$path" 2>/dev/null)" ]]; then
+      if $DRY_RUN; then
+        printf '[dry-run] git rm -rf [--sparse] -- %q\n' "$path"
+      else
+        git rm -rf --sparse -- "$path" 2>/dev/null || git rm -rf -- "$path"
+      fi
+    elif [[ -e "$path" ]]; then
+      run rm -rf -- "$path"
+    fi
+
+    if $DRY_RUN; then
+      printf '[dry-run] git submodule add -f (-b %q if exists on remote, else default branch) -- %q %q\n' "$branch" "$url" "$path"
+    else
+      submod_args=(-f)
+      if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
+        submod_args+=(-b "$branch")
+      else
+        [[ -n "$branch" ]] && echo "Remote has no branch '$branch' for $path; using repository default branch." >&2
+      fi
+      if ! GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" -c core.sparseCheckout=false -c index.sparse=false submodule add "${submod_args[@]}" -- "$url" "$path"; then
+        echo "submodulize: failed to add submodule $path ← $url" >&2
+        echo "  If the repo is private: configure HTTPS credentials, or re-run with --ssh (needs GitHub SSH access)." >&2
+        echo "  After a failed add you may need: git submodule deinit -f -- $path 2>/dev/null; rm -rf .git/modules/$path $path" >&2
+        exit 1
+      fi
+    fi
+  done < "$MANIFEST"
+
+  if [[ "$manifest_entries" -eq 0 ]]; then
+    echo "No entries in manifest." >&2
+    exit 1
+  fi
+
+  if $DRY_RUN; then
+    echo "Dry run complete."
+    $BOOTSTRAP && echo "Bootstrap: would commit on submodulized, then run unsubmodulize replay (omit --dry-run)." >&2
+    exit 0
+  fi
+
+  if ! $NO_COMMIT; then
+    if git diff --cached --quiet 2>/dev/null; then
+      echo "Nothing staged; skipping commit."
+    else
+      git commit -m "chore: add plugin submodules per plugin-submodules.manifest"
+    fi
+  fi
+
+  $BOOTSTRAP || echo "Done. Submodule layout is ready (clean repo)."
+}
+
+submodulize_bootstrap_pipeline() {
+  local vend_tip unsub_args
+  vend_tip="$(git rev-parse HEAD)"
+  echo "Bootstrap: vendored fork-point for unsub replay: $vend_tip" >&2
+
+  if git show-ref --verify --quiet refs/heads/submodulized && ! $FORCE_REPLAY; then
+    echo "Branch submodulized already exists. Use --force to replace it, delete the branch, or run without bootstrap." >&2
+    exit 1
+  fi
+  $FORCE_REPLAY && git branch -D submodulized 2>/dev/null || true
+
+  git checkout -B submodulized
+
+  submodulize_one_shot_apply_manifest
+
+  if $DRY_RUN; then
+    exit 0
+  fi
+
+  unsub_args=(--repo "$REPO_ROOT" --fork-point "$vend_tip" --source submodulized --target unsubmodulized)
+  $FORCE_REPLAY && unsub_args+=(--force)
+
+  bash "$SCRIPT_DIR/unsubmodulize.sh" "${unsub_args[@]}"
+  echo "Bootstrap complete: submodulized (submodules) and unsubmodulized (vendored replay) are ready." >&2
 }
 
 submodulize_replay_mode() {
@@ -495,102 +663,15 @@ submodulize_replay_mode() {
   echo "Done. Branch $TARGET_BRANCH -> $(git rev-parse "$TARGET_BRANCH")"
 }
 
+if $BOOTSTRAP; then
+  submodulize_bootstrap_pipeline
+  exit 0
+fi
+
 if $REPLAY; then
   submodulize_replay_mode
   exit 0
 fi
 
-manifest_entries=0
-while IFS='|' read -r raw_path raw_url raw_branch; do
-  path="${raw_path#"${raw_path%%[![:space:]]*}"}"
-  path="${path%"${path##*[![:space:]]}"}"
-  url="${raw_url#"${raw_url%%[![:space:]]*}"}"
-  url="${url%"${url##*[![:space:]]}"}"
-  branch="${raw_branch#"${raw_branch%%[![:space:]]*}"}"
-  branch="${branch%"${branch##*[![:space:]]}"}"
-
-  [[ -z "$path" || "$path" =~ ^# ]] && continue
-  [[ -z "$url" ]] && { echo "Manifest: missing URL for path $path" >&2; exit 1; }
-  [[ -z "$branch" ]] && branch="main"
-  url="$(rewrite_github_url_to_ssh "$url")"
-
-  ((++manifest_entries)) || true
-
-  if [[ -f .gitmodules ]] && git config -f .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | grep -Fxq "$path"; then
-    echo "Already a submodule (per .gitmodules): $path — skipping"
-    continue
-  fi
-
-  if [[ -d "$path/.git" ]] || [[ -f "$path/.git" ]]; then
-    echo "Path already looks like a nested git repo: $path" >&2
-    echo "  Remove or convert it manually, or run unsubmodulize first." >&2
-    exit 1
-  fi
-
-  if [[ -e "$path" ]] && ! $DRY_RUN; then
-    if ! git diff --quiet -- "$path" 2>/dev/null || ! git diff --cached --quiet -- "$path" 2>/dev/null; then
-      echo "Uncommitted changes under $path — commit or stash first." >&2
-      exit 1
-    fi
-  fi
-
-  echo "Submodulizing: $path ← $url (branch $branch)"
-
-  parent="$(dirname "$path")"
-  if [[ "$parent" != "." ]]; then
-    run mkdir -p "$parent"
-  fi
-
-  # Use tracked-file listing, not --error-unmatch: for a directory, Git often has no
-  # single index entry named exactly $path, only files underneath — then plain rm
-  # would leave the path in the index and submodule add fails.
-  if [[ -n "$(git ls-files -- "$path" 2>/dev/null)" ]]; then
-    if $DRY_RUN; then
-      printf '[dry-run] git rm -rf [--sparse] -- %q\n' "$path"
-    else
-      git rm -rf --sparse -- "$path" 2>/dev/null || git rm -rf -- "$path"
-    fi
-  elif [[ -e "$path" ]]; then
-    run rm -rf -- "$path"
-  fi
-
-  if $DRY_RUN; then
-    printf '[dry-run] git submodule add -f (-b %q if exists on remote, else default branch) -- %q %q\n' "$branch" "$url" "$path"
-  else
-    # -f: Moodle .gitignore often ignores plugin dirs; without it submodule add fails.
-    # -c overrides: sparse-checkout can still block the add otherwise.
-    # Many upstream Moodle plugins use master or MOODLE_*_STABLE, not main — omit -b to use remote HEAD.
-    submod_args=(-f)
-    if [[ -n "$branch" ]] && GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" ls-remote --heads "$url" "refs/heads/$branch" 2>/dev/null | grep -q .; then
-      submod_args+=(-b "$branch")
-    else
-      [[ -n "$branch" ]] && echo "Remote has no branch '$branch' for $path; using repository default branch." >&2
-    fi
-    if ! GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" -c core.sparseCheckout=false -c index.sparse=false submodule add "${submod_args[@]}" -- "$url" "$path"; then
-      echo "submodulize: failed to add submodule $path ← $url" >&2
-      echo "  If the repo is private: configure HTTPS credentials, or re-run with --ssh (needs GitHub SSH access)." >&2
-      echo "  After a failed add you may need: git submodule deinit -f -- $path 2>/dev/null; rm -rf .git/modules/$path $path" >&2
-      exit 1
-    fi
-  fi
-done < "$MANIFEST"
-
-if [[ "$manifest_entries" -eq 0 ]]; then
-  echo "No entries in manifest." >&2
-  exit 1
-fi
-
-if $DRY_RUN; then
-  echo "Dry run complete."
-  exit 0
-fi
-
-if ! $NO_COMMIT; then
-  if git diff --cached --quiet 2>/dev/null; then
-    echo "Nothing staged; skipping commit."
-  else
-    git commit -m "chore: add plugin submodules per plugin-submodules.manifest"
-  fi
-fi
-
-echo "Done. Submodule layout is ready (clean repo)."
+submodulize_one_shot_apply_manifest
+exit 0
