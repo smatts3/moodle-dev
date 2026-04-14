@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Convert vendored plugin directories (plain files in the Moodle repo, e.g. lsuce-moodle develop)
-# into git submodules. Run from anywhere inside the Moodle clone; uses repo root.
+# into git submodules. Run from inside the clone, or pass the clone path as ROOT / --repo.
 #
 # Requires: git, a clean enough working tree (commit or stash first if paths are dirty).
 #
 # Usage:
-#   ./cleandev/submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+#   ./cleandev/submodulize.sh [ROOT] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+#   Bare ROOT is the same as --repo (optional; may appear before or after flags).
 #
 # Private GitHub repos over HTTPS need credentials. Set GITHUB_TOKEN (PAT) so HTTPS URLs are rewritten
 # for ls-remote / submodule add (parent repo url.insteadOf is not always applied to submodule clone).
@@ -23,17 +24,27 @@ REPO_ROOT=""
 usage() {
   cat <<'EOF'
 Convert vendored plugin directories in the Moodle repo into git submodules.
-Run from anywhere inside the Moodle clone (uses repo root unless --repo is set).
+Moodle root defaults to the current directory’s git superproject (git rev-parse --show-toplevel), unless you set it explicitly.
 
 Usage:
-  submodulize.sh [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+  submodulize.sh [ROOT] [OPTIONS...]
+  submodulize.sh [OPTIONS...] [ROOT]
+
+  ROOT — optional path to the Moodle git checkout. Give it as a single bare argument (no leading -),
+         anywhere among the flags; same meaning as --repo. Only one repo path: do not pass a second
+         bare path, and do not put a bare path after --repo (that is rejected).
+
+Examples:
+  submodulize.sh ~/workspace/moodle
+  submodulize.sh --dry-run ~/workspace/moodle
+  submodulize.sh ~/workspace/moodle --no-commit --ssh
 
 Options:
   --dry-run       Print actions without changing the repo
   --no-commit     Stage submodule changes but do not commit
   --ssh           Use git@github.com URLs for github.com HTTPS entries
   --manifest PATH Use a manifest file (default: cleandev/plugin-submodules.manifest next to this script)
-  --repo ROOT     Moodle git root (default: git rev-parse --show-toplevel)
+  --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
 
 Requires: git, and a clean enough working tree (commit or stash if plugin paths are dirty).
 
@@ -60,9 +71,17 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    *)
+    -*)
       echo "Unknown option: $1" >&2
       exit 1
+      ;;
+    *)
+      if [[ -n "$REPO_ROOT" ]]; then
+        echo "Unexpected argument: $1 (repo already set via --repo or positional path)" >&2
+        exit 1
+      fi
+      REPO_ROOT="$1"
+      shift
       ;;
   esac
 done
@@ -74,7 +93,7 @@ fi
 
 if [[ -z "$REPO_ROOT" ]]; then
   REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
-    echo "Not inside a git repository. Use --repo /path/to/moodle" >&2
+    echo "Not inside a git repository. Pass the Moodle root as a bare path or use --repo /path/to/moodle" >&2
     exit 1
   }
 fi

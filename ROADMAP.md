@@ -18,7 +18,7 @@ Progress toward **seamless `develop` ↔ `cleandev`** (on [lsuce-moodle](https:/
 - [ ] **Commit portability:** Script or documented workflow to **replay or port commits** across layouts with a **header** noting the original commit (and branch/repo). *Not in repo today—only bulk layout conversion exists.*
 - [x] **`new.sh` / tooling:** With `--submodulize`, **detect** when every manifest path is already a submodule (cleandev-style) and **skip** `submodulize.sh` instead of a no-op pass. *Not done: auto-run conversion without passing `--submodulize`.*
 - [x] **`unsubmodulize.sh`:** Same `GITHUB_TOKEN` `-c url.insteadOf` pattern as `submodulize.sh` for private HTTPS (parity with submodule add).
-- [ ] **Monorepo manifest + scripts:** Support “clone once, map subpaths”, or publish **one-shot manual procedures** for commented monorepo lines.
+- [x] **Monorepo manifest + scripts:** **One-shot manual procedures** for commented monorepo lines: [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md) (manifest regeneration → Monorepos). *Not done: automated “clone once, map subpaths” in `submodulize.sh`.*
 - [ ] **`local/ml`:** Point at the correct Git remote when known; uncomment or add manifest line.
 - [x] **CI (cleandev):** GitHub Actions runs `cleandev/tests/run.sh` (manifest lint, round-trip integration tests, shellcheck on Ubuntu).
 - [ ] **Optional CI:** Check that manifest paths still match **lsuce-moodle** `develop` plugin layout when plugins move.

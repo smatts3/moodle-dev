@@ -90,7 +90,33 @@ Do **not** add separate submodule lines per element subdirectory.
 
 ### Monorepos
 
-If **one Git repository** contains **multiple** top-level Moodle plugin paths (e.g. Kaltura, Microsoft o365-moodle, `lsu-enrol_ues`), **do not** add one manifest line per path with the same URL: `submodulize.sh` cannot “clone once, map subpaths.” Keep a **commented block** in `plugin-submodules.manifest` listing the URL and paths (see existing `# --- Monorepos ---` section), and leave those plugins **vendored** or handle them with a **manual** procedure until tooling supports it.
+If **one Git repository** contains **multiple** top-level Moodle plugin paths (e.g. Kaltura, Microsoft o365-moodle, `lsu-enrol_ues`), **do not** add one manifest line per path with the same URL: `submodulize.sh` cannot “clone once, map subpaths.” Keep a **commented block** in `plugin-submodules.manifest` listing the URL and paths (see `# --- Monorepos ---` in the manifest). Treat those directories as **vendored** in the superproject unless you adopt an advanced layout (see below).
+
+#### One-shot: refresh vendored monorepo plugins (develop or cleandev)
+
+Use this when upstream shipped changes and you need the same Moodle paths updated without submodule tooling.
+
+1. **Note the source** from the manifest comment block (clone URL and the list of Moodle-relative paths, e.g. `mod/kalvidassign`).
+2. **Clone upstream** somewhere outside the Moodle tree (temp is fine), on the branch or tag you intend to ship:
+   ```bash
+   git clone --depth 1 -b BRANCH_OR_TAG https://github.com/org/monorepo.git /tmp/monorepo-src
+   ```
+   Use a full clone if you need history or a non-default branch tip.
+3. **Map paths** — upstream layout varies by project. Under `/tmp/monorepo-src`, locate the directory that corresponds to each Moodle path (often the path matches the repo tree; if the project nests plugins under `moodle/` or similar, copy from there).
+4. **Copy into lsuce-moodle** from the Moodle repo root, one path at a time (adjust source side to match step 3):
+   ```bash
+   rsync -a --delete /tmp/monorepo-src/mod/kalvidassign/ mod/kalvidassign/
+   ```
+   Prefer `--delete` only when you intend to mirror upstream exactly; otherwise omit it. On Windows without `rsync`, use a graphical diff tool or `cp -r` with care.
+5. **Review** (`git status`, smoke test in Moodle), then **commit** in **lsuce-moodle** (single commit per upstream bump or per path—follow team convention).
+
+Repeat for each path listed under that URL in the manifest comment. Bundles such as **Kaltura** (`moodle_plugin`), **Kaltura gallery** (`moodle-local_kalturamediagallery`), **o365-moodle**, and **lsu-enrol_ues** are independent clones; refresh each comment group from its own remote.
+
+#### One-shot: cleandev when monorepo paths stay vendored
+
+On **cleandev**, submodule-backed plugins use `.gitmodules`; monorepo-backed paths stay **normal tracked directories** in the superproject (no submodule entry). Do not add duplicate manifest active lines for the same URL. After `git submodule update --init`, those paths behave like core tree: edit, commit, and push on **lsuce-moodle** unless your team splits them out later.
+
+*Automated “clone once, map subpaths” for the manifest is still not implemented; the steps above are the supported manual approach.*
 
 ### No usable HTTPS URL
 
