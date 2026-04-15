@@ -76,10 +76,10 @@ Replay (default — one superproject commit per plugin-repo commit on --target):
   --no-replay           One-shot mode: convert submodules per manifest (no branch replay)
   --replay              Replay mode (default; explicit if you toggled --no-replay earlier on the command line)
   --fork-point BASE     Superproject where replay starts (default: local master, else main, when omitted — see docs)
-  --source BR           End state per path: gitlinks and/or vendored trees (default: unsubmodulized, else master, else main, else submodulized)
+  --source BR           Submodule/vendored tip to replay from (default: submodulized, else unsubmodulized, else master, else main)
   --target BR           Branch to create/update (default: unsubmodulized)
   --order NAME          Only chronological (committer date, then path, then SHA)
-  --force               Overwrite --target branch if it exists (replay only)
+  --force               Replay only: delete and rebuild --target from --fork-point (omit for incremental update when --target exists)
   --plugin-base P=S     Optional start SHA for manifest path P (e.g. when BASE has no gitlink)
 
 Requires: git, and clean submodule working trees for paths being converted (no uncommitted changes inside submodules).
@@ -226,23 +226,23 @@ if $REPLAY && [[ -z "$FORK_POINT" ]]; then
       echo "Default --fork-point $FORK_POINT (HEAD is ${base_ref} or $TARGET_BRANCH)." >&2
     else
       FORK_POINT="$base_ref"
-      echo "Default --fork-point $FORK_POINT (recreating $TARGET_BRANCH from ${base_ref}; use --force if the branch already exists)." >&2
+      echo "Default --fork-point $FORK_POINT ($TARGET_BRANCH exists: incremental replay without --force, or --force to rebuild from ${base_ref})." >&2
     fi
   fi
 fi
 
-# When --source is omitted in replay mode: prefer unsubmodulized (vendored end state), else master/main/submodulized.
+# When --source is omitted in replay mode: prefer submodulized (gitlink tip) for replaying into unsubmodulized.
 if $REPLAY && ! $REPLAY_SOURCE_EXPLICIT; then
-  if git show-ref --verify --quiet "refs/heads/unsubmodulized"; then
+  if git show-ref --verify --quiet refs/heads/submodulized; then
+    SOURCE_BRANCH=submodulized
+  elif git show-ref --verify --quiet "refs/heads/unsubmodulized"; then
     SOURCE_BRANCH=unsubmodulized
   elif git show-ref --verify --quiet refs/heads/master; then
     SOURCE_BRANCH=master
   elif git show-ref --verify --quiet refs/heads/main; then
     SOURCE_BRANCH=main
-  elif git show-ref --verify --quiet refs/heads/submodulized; then
-    SOURCE_BRANCH=submodulized
   else
-    echo "Replay: pass --source BR (no local unsubmodulized, master, main, or submodulized branch found)." >&2
+    echo "Replay: pass --source BR (no local submodulized, unsubmodulized, master, or main branch found)." >&2
     exit 1
   fi
   echo "Default --source $SOURCE_BRANCH" >&2
@@ -288,11 +288,6 @@ rewrite_github_url_to_ssh() {
 unsubmodulize_replay_mode() {
   git rev-parse --verify "$FORK_POINT^{commit}" >/dev/null
   git rev-parse --verify "$SOURCE_BRANCH^{commit}" >/dev/null
-
-  if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && ! $FORCE_REPLAY; then
-    echo "Branch $TARGET_BRANCH exists; pass --force to overwrite" >&2
-    exit 1
-  fi
 
   ls_path_mode_sha() {
     local commit="$1" path="$2"
@@ -346,6 +341,24 @@ unsubmodulize_replay_mode() {
 
   SOURCE_TIP="$(git rev-parse "$SOURCE_BRANCH^{commit}")"
 
+  INCREMENTAL=false
+  FROM_REF="$FORK_POINT"
+  if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && ! $FORCE_REPLAY; then
+    INCREMENTAL=true
+    FROM_REF="$(git rev-parse "$TARGET_BRANCH^{commit}")"
+    for _xi in "${!M_PATHS[@]}"; do
+      _xp="${M_PATHS[_xi]}"
+      _ms="$(ls_path_mode_sha "$FROM_REF" "$_xp")"
+      _mode="${_ms%%$'\t'*}"
+      if [[ "$_mode" != "040000" ]]; then
+        echo "unsubmodulize: $TARGET_BRANCH at $_xp is not a vendored directory (tree mode $_mode)." >&2
+        echo "  Use --force to delete $TARGET_BRANCH and rebuild from --fork-point $FORK_POINT." >&2
+        exit 1
+      fi
+    done
+    echo "unsubmodulize: incremental update of $TARGET_BRANCH from $(git rev-parse --short "$FROM_REF") toward $SOURCE_BRANCH." >&2
+  fi
+
   TMPD="$(mktemp -d "${TMPDIR:-/tmp}/unsub-replay.XXXXXX")"
   trap 'rm -rf "$TMPD"' EXIT
 
@@ -356,7 +369,7 @@ unsubmodulize_replay_mode() {
     URL="${M_URLS[$i]}"
     URL="$(rewrite_github_url_to_ssh "$URL")"
 
-    ms="$(ls_path_mode_sha "$FORK_POINT" "$P")"
+    ms="$(ls_path_mode_sha "$FROM_REF" "$P")"
     mode="${ms%%$'\t'*}"
     from_sha="${ms#*$'\t'}"
 
@@ -394,17 +407,17 @@ unsubmodulize_replay_mode() {
     elif [[ "$mode" == "160000" && -n "$from_sha" ]]; then
       :
     elif [[ "$mode" == "040000" ]]; then
-      tr_sha="$(git rev-parse "$FORK_POINT:$P" 2>/dev/null || true)"
+      tr_sha="$(git rev-parse "$FROM_REF:$P" 2>/dev/null || true)"
       if [[ -z "$tr_sha" ]]; then
-        echo "No tree at $FORK_POINT:$P" >&2
+        echo "No tree at $FROM_REF:$P" >&2
         exit 1
       fi
       from_sha="$(find_plugin_commit_for_tree "$PDIR" "$tr_sha")" || {
-        echo "Could not find plugin commit matching tree at $FORK_POINT:$P" >&2
+        echo "Could not find plugin commit matching tree at $FROM_REF:$P" >&2
         exit 1
       }
     else
-      echo "Path $P at fork-point must be gitlink or directory; use --plugin-base ${P}=SHA" >&2
+      echo "Path $P at replay base $FROM_REF must be gitlink or vendored directory; use --plugin-base ${P}=SHA" >&2
       exit 1
     fi
 
@@ -433,7 +446,15 @@ unsubmodulize_replay_mode() {
   if [[ ${#EVENT_LINES[@]} -eq 0 ]]; then
     echo "No plugin commits to replay." >&2
     if $DRY_RUN; then
-      echo "Planned: branch $TARGET_BRANCH at $FORK_POINT (fork already matches submodule plugin SHAs)" >&2
+      if $INCREMENTAL; then
+        echo "Planned: no new commits ($TARGET_BRANCH already matches $SOURCE_BRANCH submodule tips)." >&2
+      else
+        echo "Planned: branch $TARGET_BRANCH at $FORK_POINT (fork already matches submodule plugin SHAs)" >&2
+      fi
+      exit 0
+    fi
+    if $INCREMENTAL; then
+      echo "Branch $TARGET_BRANCH is already up to date with $SOURCE_BRANCH." >&2
       exit 0
     fi
     if $FORCE_REPLAY && git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
@@ -449,7 +470,11 @@ unsubmodulize_replay_mode() {
   unset IFS
 
   if $DRY_RUN; then
-    echo "Planned ${#EVENT_LINES[@]} commits on $TARGET_BRANCH (from $FORK_POINT)"
+    if $INCREMENTAL; then
+      echo "Planned ${#EVENT_LINES[@]} incremental commit(s) on $TARGET_BRANCH ($(git rev-parse --short "$FROM_REF") → $SOURCE_BRANCH)" >&2
+    else
+      echo "Planned ${#EVENT_LINES[@]} commits on $TARGET_BRANCH (from $FORK_POINT)" >&2
+    fi
     while IFS=$'\t' read -r ct p sha pdir; do
       [[ -z "${ct:-}" ]] && continue
       echo "  $ct  $p  $sha  ($(git -C "$pdir" show -s --format=%s "$sha"))"
@@ -464,7 +489,12 @@ unsubmodulize_replay_mode() {
 
   WT="$TMPD/wt"
   rm -rf "$WT"
-  FORK_R="$(git rev-parse "$FORK_POINT^{commit}")"
+  REPLAY_ROOT="$FORK_POINT"
+  REPLAY_ROOT_REV="$(git rev-parse "$FORK_POINT^{commit}")"
+  if $INCREMENTAL; then
+    REPLAY_ROOT="$FROM_REF"
+    REPLAY_ROOT_REV="$(git rev-parse "$FROM_REF^{commit}")"
+  fi
 
   materialize_commit_at() {
     local commit="$1" dest="$2"
@@ -489,8 +519,8 @@ unsubmodulize_replay_mode() {
 
   fill_worktree_from_parent() {
     local parent="$1" dest="$2"
-    if [[ "$(git rev-parse "$parent^{commit}")" == "$FORK_R" ]]; then
-      materialize_commit_at "$FORK_POINT" "$dest"
+    if [[ "$(git rev-parse "$parent^{commit}")" == "$REPLAY_ROOT_REV" ]]; then
+      materialize_commit_at "$REPLAY_ROOT" "$dest"
     else
       rm -rf "${dest:?}/"*
       mkdir -p "$dest"
@@ -498,7 +528,11 @@ unsubmodulize_replay_mode() {
     fi
   }
 
-  GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" worktree add -B "$TARGET_BRANCH" "$WT" "$FORK_POINT" --force
+  if $INCREMENTAL; then
+    GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" worktree add -f "$WT" "$TARGET_BRANCH"
+  else
+    GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" worktree add -B "$TARGET_BRANCH" "$WT" "$FORK_POINT" --force
+  fi
 
   while IFS=$'\t' read -r ct P csha pdir; do
     [[ -z "${ct:-}" ]] && continue
