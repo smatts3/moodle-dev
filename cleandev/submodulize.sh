@@ -3,7 +3,8 @@
 # Intended for the submodule-layout Moodle checkout: keep plugin-submodules.manifest at the superproject
 # root (same repo as .gitmodules will live in). Run from inside that clone, or pass ROOT / --repo.
 # Default mode is replay: builds branch submodulized with one superproject commit per plugin-repo commit.
-# Use --no-replay for one-shot conversion (manifest loop only).
+# Use --no-replay for one-shot conversion (manifest loop only). When submodulized and unsubmodulized both
+# exist and unsub is ahead of merge-base(unsub, sub), the one-shot path also replays those commits onto gitlinks.
 #
 # Requires: git, a clean enough working tree (commit or stash first if paths are dirty).
 #
@@ -46,6 +47,8 @@ REPLAY_ORDER_EXPLICIT=false
 FORK_POINT_EXPLICIT=false
 BOOTSTRAP=false
 BOOTSTRAP_EXPLICIT=false
+SYNC_UNSUB=false
+NO_SYNC_FROM_UNSUB=false
 declare -a PLUGIN_BASE_OVERRIDES=()
 
 usage() {
@@ -69,6 +72,8 @@ Examples:
   submodulize.sh ./   # same as --bootstrap when submodulized branch does not exist yet
   submodulize.sh --dry-run --no-replay ~/workspace/moodle
   submodulize.sh --fork-point abc123 --source submodulized
+  submodulize.sh ./   # when unsubmodulized is ahead of merge-base(sub,unsub), syncs onto submodulized automatically
+  submodulize.sh --no-sync-from-unsub ./   # manifest one-shot only; skip unsub → submodulized replay
 
 Options:
   --dry-run       Print actions without changing the repo
@@ -90,6 +95,8 @@ Replay (default — one superproject commit per plugin-repo commit on --target):
   --order NAME          Only chronological
   --force               Replay: delete and rebuild --target from --fork-point. Omit when --target exists to only apply manifest changes (new paths → submodule add).
   --plugin-base P=S     Optional start SHA for manifest path P
+  --sync-unsub          Force the unsub→submodulized sync step (even if merge-base already equals unsub tip). Normally automatic when both branches exist and unsub is ahead.
+  --no-sync-from-unsub  After manifest one-shot: do not replay unsubmodulized onto submodulized (overrides automatic sync).
 
 Requires: git, and a clean enough working tree (commit or stash if plugin paths are dirty).
 
@@ -140,6 +147,15 @@ while [[ $# -gt 0 ]]; do
       PLUGIN_BASE_OVERRIDES+=("${2:?}")
       shift 2
       ;;
+    --sync-unsub)
+      SYNC_UNSUB=true
+      REPLAY=false
+      shift
+      ;;
+    --no-sync-from-unsub)
+      NO_SYNC_FROM_UNSUB=true
+      shift
+      ;;
     --manifest)
       MANIFEST="${2:?}"
       MANIFEST_EXPLICIT=true
@@ -180,7 +196,57 @@ if ! $MANIFEST_EXPLICIT; then
 fi
 
 if [[ ! -f "$MANIFEST" ]]; then
-  echo "Manifest not found: $MANIFEST" >&2
+  if $MANIFEST_EXPLICIT; then
+    echo "Manifest not found: $MANIFEST" >&2
+    exit 1
+  elif $SYNC_UNSUB; then
+    :
+  elif git -C "$REPO_ROOT" show-ref --verify --quiet refs/heads/submodulized 2>/dev/null \
+    && git -C "$REPO_ROOT" show-ref --verify --quiet refs/heads/unsubmodulized 2>/dev/null; then
+    :
+  else
+    echo "Manifest not found: $MANIFEST" >&2
+    exit 1
+  fi
+fi
+
+if $SYNC_UNSUB; then
+  $BOOTSTRAP_EXPLICIT && {
+    echo "Do not combine --sync-unsub with --bootstrap." >&2
+    exit 1
+  }
+  $FORK_POINT_EXPLICIT && {
+    echo "Do not combine --sync-unsub with --fork-point." >&2
+    exit 1
+  }
+  $REPLAY_SOURCE_EXPLICIT && {
+    echo "Do not combine --sync-unsub with --source." >&2
+    exit 1
+  }
+  $REPLAY_TARGET_EXPLICIT && {
+    echo "Do not combine --sync-unsub with --target." >&2
+    exit 1
+  }
+  $REPLAY_ORDER_EXPLICIT && {
+    echo "Do not combine --sync-unsub with --order." >&2
+    exit 1
+  }
+  ((${#PLUGIN_BASE_OVERRIDES[@]} == 0)) || {
+    echo "--plugin-base is not used with --sync-unsub." >&2
+    exit 1
+  }
+  $FORCE_REPLAY && {
+    echo "--force is not used with --sync-unsub." >&2
+    exit 1
+  }
+  $NO_COMMIT && {
+    echo "--sync-unsub requires commits on $TARGET_BRANCH (omit --no-commit)." >&2
+    exit 1
+  }
+fi
+
+if $NO_SYNC_FROM_UNSUB && $SYNC_UNSUB; then
+  echo "Do not combine --sync-unsub with --no-sync-from-unsub." >&2
   exit 1
 fi
 
@@ -208,6 +274,17 @@ if $BOOTSTRAP_EXPLICIT; then
 fi
 
 cd "$REPO_ROOT"
+
+if $SYNC_UNSUB; then
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" || {
+    echo "submodulize --sync-unsub: branch $TARGET_BRANCH does not exist yet." >&2
+    exit 1
+  }
+  git show-ref --verify --quiet refs/heads/unsubmodulized || {
+    echo "submodulize --sync-unsub: branch unsubmodulized not found." >&2
+    exit 1
+  }
+fi
 
 # Greenfield: no submodulized branch yet — run bootstrap (one-shot + unsub replay) instead of sub replay.
 if $REPLAY && ! $FORK_POINT_EXPLICIT && ! $BOOTSTRAP_EXPLICIT && ! git show-ref --verify --quiet refs/heads/submodulized; then
@@ -363,6 +440,181 @@ submodulize_stage_root_manifest() {
   else
     git add -- "$MANIFEST" || true
   fi
+}
+
+# Replay commits on unsubmodulized (since merge-base with TARGET_BRANCH) onto TARGET_BRANCH: each commit
+# may only touch paths under plugin-submodules.manifest roots; trees must match a plugin-repo commit.
+submodulize_sync_from_unsubmodulized() {
+  if $DRY_RUN; then
+    echo "submodulize: sync from unsubmodulized — dry-run not supported; skipping." >&2
+    return 0
+  fi
+  local UNSUB_BRANCH=unsubmodulized
+  local active_br
+  active_br="$(git symbolic-ref -q --short HEAD 2>/dev/null || true)"
+  if [[ "$active_br" != "$TARGET_BRANCH" ]]; then
+    echo "submodulize: checking out $TARGET_BRANCH (sync from unsubmodulized)" >&2
+    git checkout "$TARGET_BRANCH"
+  fi
+  if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    echo "submodulize: sync from unsubmodulized — working tree or index is dirty; commit or stash first." >&2
+    exit 1
+  fi
+
+  declare -a S_PATHS=() S_URLS=()
+  while IFS='|' read -r raw_path raw_url raw_branch; do
+    path="${raw_path#"${raw_path%%[![:space:]]*}"}"
+    path="${path%"${path##*[![:space:]]}"}"
+    url="${raw_url#"${raw_url%%[![:space:]]*}"}"
+    url="${url%"${url##*[![:space:]]}"}"
+    branch="${raw_branch#"${raw_branch%%[![:space:]]*}"}"
+    branch="${branch%"${branch##*[![:space:]]}"}"
+    [[ -z "$path" || "$path" =~ ^# ]] && continue
+    [[ -z "$url" ]] && { echo "Manifest: missing URL for path $path" >&2; exit 1; }
+    S_PATHS+=("$path")
+    S_URLS+=("$(rewrite_github_url_to_ssh "$url")")
+  done < "$MANIFEST"
+
+  ((${#S_PATHS[@]} > 0)) || { echo "No manifest entries." >&2; exit 1; }
+
+  manifest_root_for_path() {
+    local f="$1" p best=""
+    for p in "${S_PATHS[@]}"; do
+      if [[ "$f" == "$p" || "$f" == "$p"/* ]]; then
+        [[ ${#p} -gt ${#best} ]] && best="$p"
+      fi
+    done
+    printf '%s\n' "$best"
+  }
+
+  find_plugin_commit_for_tree_sync() {
+    local pdir="$1" want_tree="$2" c t
+    while IFS= read -r c; do
+      t="$(git -C "$pdir" rev-parse "$c^{tree}" 2>/dev/null || true)"
+      [[ "$t" == "$want_tree" ]] && { echo "$c"; return 0; }
+    done < <(git -C "$pdir" rev-list --first-parent --reverse --all)
+    return 1
+  }
+
+  local BASE unsub_tip TMPD i url pdir U parent_u changed fn r ms mode newsha idx new_tree cur_tree nc msgf
+  BASE="$(git merge-base "$UNSUB_BRANCH" "$TARGET_BRANCH")" || {
+    echo "submodulize: sync from unsubmodulized — could not compute merge-base($UNSUB_BRANCH, $TARGET_BRANCH)." >&2
+    exit 1
+  }
+  unsub_tip="$(git rev-parse "$UNSUB_BRANCH^{commit}")"
+  if [[ "$BASE" == "$unsub_tip" ]]; then
+    echo "submodulize: sync from unsubmodulized — no new commits on $UNSUB_BRANCH since merge-base." >&2
+    return 0
+  fi
+
+  TMPD="$(mktemp -d "${TMPDIR:-/tmp}/sub-sync-unsub.XXXXXX")"
+  declare -a PDIRS=()
+  for i in "${!S_PATHS[@]}"; do
+    url="${S_URLS[$i]}"
+    pdir="$TMPD/plugin_${i}_$(echo "${S_PATHS[$i]}" | tr '/' '_')"
+    PDIRS+=("$pdir")
+    if [[ ! -d "$pdir/.git" ]]; then
+      GIT_TERMINAL_PROMPT=0 git "${git_github_pat_c[@]}" clone --bare "$url" "$pdir"
+    fi
+    GIT_TERMINAL_PROMPT=0 git -C "$pdir" fetch -q origin 2>/dev/null || true
+    GIT_TERMINAL_PROMPT=0 git -C "$pdir" fetch -q "$url" "+refs/*:refs/remotes/import/*" 2>/dev/null || true
+  done
+
+  git_write_gitmodules_from_index() {
+    local gm="$TMPD/gitmodules.tmp" blob _i _p _u _line _mode _sha
+    rm -f "$gm"
+    for _i in "${!S_PATHS[@]}"; do
+      _p="${S_PATHS[_i]}"
+      _u="${S_URLS[$_i]}"
+      _line="$(git ls-files --stage -- "$_p" 2>/dev/null | head -n1 || true)"
+      _mode="$(awk '{print $1}' <<< "$_line")"
+      _sha="$(awk '{print $2}' <<< "$_line")"
+      if [[ "$_mode" == "160000" ]]; then
+        printf '[submodule "%s"]\n\tpath = %s\n\turl = %s\n' "$_p" "$_p" "$_u" >>"$gm"
+      fi
+    done
+    if [[ -f "$gm" ]]; then
+      blob="$(git hash-object -w "$gm")"
+      git update-index --add --cacheinfo "100644,$blob,.gitmodules"
+    else
+      git rm --cached -f --ignore-unmatch .gitmodules 2>/dev/null || true
+    fi
+  }
+
+  while IFS= read -r U; do
+    [[ -z "${U:-}" ]] && continue
+    if git rev-parse --verify -q "$U^2" >/dev/null 2>&1; then
+      echo "submodulize: sync from unsubmodulized — skipping merge commit $(git rev-parse --short "$U")" >&2
+      continue
+    fi
+    parent_u="$(git rev-parse "$U^")"
+    changed="$(git diff-tree --no-commit-id --name-only -r "$parent_u" "$U")"
+
+    declare -A seen_roots=()
+    while IFS= read -r fn; do
+      [[ -z "${fn:-}" ]] && continue
+      r="$(manifest_root_for_path "$fn")"
+      if [[ -z "$r" ]]; then
+        echo "submodulize: sync from unsubmodulized — commit $(git rev-parse --short "$U") touches $fn (outside manifest paths)." >&2
+        exit 1
+      fi
+      seen_roots[$r]=1
+    done <<< "$changed"
+
+    idx="$TMPD/index.${U}"
+    rm -f "$idx"
+    export GIT_INDEX_FILE="$idx"
+    git read-tree "$(git rev-parse HEAD)"
+
+    for r in "${!seen_roots[@]}"; do
+      newsha=""
+      for j in "${!S_PATHS[@]}"; do
+        [[ "${S_PATHS[$j]}" == "$r" ]] || continue
+        pdir="${PDIRS[$j]}"
+        ms="$(git ls-tree "$U" -- "$r" 2>/dev/null | awk '{print $1 "\t" $3}' | head -n1)"
+        mode="${ms%%$'\t'*}"
+        if [[ "$mode" != "040000" ]]; then
+          echo "submodulize: sync from unsubmodulized — at $U path $r is not a vendored directory (mode $mode)." >&2
+          exit 1
+        fi
+        newsha="$(find_plugin_commit_for_tree_sync "$pdir" "$(git rev-parse "$U:$r" 2>/dev/null)")" || {
+          echo "submodulize: sync from unsubmodulized — no plugin commit matches tree at $U:$r (push the same tree to the plugin remote first)." >&2
+          exit 1
+        }
+        break
+      done
+      [[ -n "$newsha" ]] || continue
+      git rm -rf --cached --ignore-unmatch -q -- "$r" 2>/dev/null || true
+      git update-index --add --cacheinfo "160000,$newsha,$r"
+    done
+
+    git_write_gitmodules_from_index
+
+    new_tree="$(git write-tree)"
+    cur_tree="$(git rev-parse 'HEAD^{tree}')"
+    if [[ "$new_tree" == "$cur_tree" ]]; then
+      echo "submodulize: sync from unsubmodulized — $(git rev-parse --short "$U") → no gitlink change (skip)" >&2
+      unset GIT_INDEX_FILE
+      rm -f "$idx"
+      continue
+    fi
+
+    msgf="$TMPD/commitmsg.$U.txt"
+    {
+      git show -s --format=%B "$U"
+      printf '\nSynced-from-unsub: %s\n' "$U"
+    } >"$msgf"
+    nc="$(git commit-tree "$new_tree" -p HEAD -F "$msgf")"
+    git update-ref "refs/heads/$TARGET_BRANCH" "$nc"
+    git reset --hard -q "$nc"
+    echo "submodulize: sync from unsubmodulized — applied $(git rev-parse --short "$U") → $TARGET_BRANCH $(git rev-parse --short "$nc")" >&2
+
+    unset GIT_INDEX_FILE
+    rm -f "$idx"
+  done < <(git rev-list --reverse "${BASE}..${UNSUB_BRANCH}")
+
+  unset GIT_INDEX_FILE
+  rm -rf "$TMPD"
 }
 
 run() {
@@ -737,5 +989,46 @@ if $REPLAY; then
   exit 0
 fi
 
+# After manifest one-shot: replay unsubmodulized → submodulized when unsub is ahead (or when --sync-unsub).
+RUN_SYNC_FROM_UNSUB=false
+if ! $NO_SYNC_FROM_UNSUB && ! $NO_COMMIT; then
+  if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" && git show-ref --verify --quiet refs/heads/unsubmodulized; then
+    if $SYNC_UNSUB; then
+      RUN_SYNC_FROM_UNSUB=true
+    else
+      _mb="$(git merge-base unsubmodulized "$TARGET_BRANCH" 2>/dev/null || true)"
+      _ut="$(git rev-parse unsubmodulized^{commit} 2>/dev/null || true)"
+      if [[ -n "$_mb" && -n "$_ut" && "$_mb" != "$_ut" ]]; then
+        RUN_SYNC_FROM_UNSUB=true
+      fi
+    fi
+  fi
+fi
+
+if $RUN_SYNC_FROM_UNSUB && ! $SYNC_UNSUB; then
+  echo "submodulize: unsubmodulized is ahead of merge-base with $TARGET_BRANCH — syncing plugin gitlinks." >&2
+fi
+
+if $RUN_SYNC_FROM_UNSUB; then
+  sb="$(git symbolic-ref -q --short HEAD 2>/dev/null || true)"
+  if [[ "$sb" != "$TARGET_BRANCH" ]]; then
+    echo "submodulize: checking out $TARGET_BRANCH (sync from unsubmodulized)" >&2
+    git checkout "$TARGET_BRANCH"
+  fi
+  if [[ ! -f "$MANIFEST" ]]; then
+    if git cat-file -e "$TARGET_BRANCH:plugin-submodules.manifest" 2>/dev/null; then
+      git show "$TARGET_BRANCH:plugin-submodules.manifest" >"$MANIFEST"
+      echo "submodulize: wrote plugin-submodules.manifest from $TARGET_BRANCH (was missing at repo root)." >&2
+    else
+      echo "Manifest not found: $MANIFEST (and not in $TARGET_BRANCH:plugin-submodules.manifest)" >&2
+      exit 1
+    fi
+  fi
+fi
+
 submodulize_one_shot_apply_manifest
+
+if $RUN_SYNC_FROM_UNSUB; then
+  submodulize_sync_from_unsubmodulized
+fi
 exit 0
