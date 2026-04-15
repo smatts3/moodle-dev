@@ -88,7 +88,7 @@ Replay (default — one superproject commit per plugin-repo commit on --target):
   --source BR           End state per path (gitlinks and/or vendored trees; default: submodulized, else master, else main)
   --target BR           Branch to create/update (default: submodulized)
   --order NAME          Only chronological
-  --force               Overwrite --target branch if it exists (replay only)
+  --force               Replay: delete and rebuild --target from --fork-point. Omit when --target exists to only apply manifest changes (new paths → submodule add).
   --plugin-base P=S     Optional start SHA for manifest path P
 
 Requires: git, and a clean enough working tree (commit or stash if plugin paths are dirty).
@@ -716,6 +716,20 @@ submodulize_replay_mode() {
 if $BOOTSTRAP; then
   submodulize_bootstrap_pipeline
   exit 0
+fi
+
+# Default "submodulize ./" on an existing --target branch: extend layout from manifest (new submodule paths)
+# instead of requiring --force. Full replay rebuild still needs explicit --fork-point/--source/--target intent + --force.
+if $REPLAY && ! $FORCE_REPLAY && git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
+  if ! $FORK_POINT_EXPLICIT && ! $REPLAY_SOURCE_EXPLICIT && ! $REPLAY_TARGET_EXPLICIT && ((${#PLUGIN_BASE_OVERRIDES[@]} == 0)); then
+    echo "submodulize: branch $TARGET_BRANCH exists — applying manifest updates (same as --no-replay). Use --force to replay-recreate $TARGET_BRANCH from --fork-point." >&2
+    REPLAY=false
+    active_br="$(git symbolic-ref -q --short HEAD 2>/dev/null || true)"
+    if [[ "$active_br" != "$TARGET_BRANCH" ]]; then
+      echo "submodulize: checking out $TARGET_BRANCH" >&2
+      git checkout "$TARGET_BRANCH"
+    fi
+  fi
 fi
 
 if $REPLAY; then
