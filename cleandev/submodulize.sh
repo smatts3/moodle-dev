@@ -74,7 +74,7 @@ Options:
   --dry-run       Print actions without changing the repo
   --no-commit     Stage submodule changes but do not commit (bootstrap still commits the submodule layout so unsub replay can run)
   --ssh           Use git@github.com URLs for github.com HTTPS entries
-  --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest)
+  --manifest PATH Plugin manifest (default: ROOT/plugin-submodules.manifest). If that file sits at the repo root, one-shot/bootstrap also stages it on the submodule branch so master/unsubmodulized can keep it untracked.
   --repo ROOT     Moodle git root (explicit form of a bare ROOT; overrides an earlier bare ROOT; a bare path after --repo is an error)
 
 Bootstrap (from vendored tree + manifest → submodulized + unsubmodulized):
@@ -335,6 +335,36 @@ rewrite_github_url_to_ssh() {
   fi
 }
 
+# Parent index only has gitlinks; files inside each plugin dir are the submodule checkout (not parent blobs).
+# checkout to a vendored branch would replace those dirs unless submodule working trees are cleared first.
+submodulize_hint_switch_from_submodule_branch() {
+  cat <<'EOF' >&2
+To switch to a branch with vendored plugin files (not gitlinks), clear submodule checkouts first, then checkout:
+  git submodule deinit -f --all
+  git checkout master   # or main / unsubmodulized
+If plugin-submodules.manifest was only committed on submodulized, copy it back in after checkout (keep it untracked on vendored branches).
+EOF
+}
+
+# Commit root plugin-submodules.manifest on the submodule branch only (vendored branches can keep a local untracked copy).
+submodulize_stage_root_manifest() {
+  [[ -f "$MANIFEST" ]] || return 0
+  [[ "$(basename -- "$MANIFEST")" == "plugin-submodules.manifest" ]] || return 0
+  local rtop mtop
+  rtop="$(cd "$REPO_ROOT" && pwd -P 2>/dev/null)" || return 0
+  mtop="$(cd "$(dirname -- "$MANIFEST")" && pwd -P 2>/dev/null)" || return 0
+  [[ "$mtop" == "$rtop" ]] || return 0
+  if $DRY_RUN; then
+    printf '[dry-run] git add %q\n' "$MANIFEST"
+    return 0
+  fi
+  if git check-ignore -q -- "$MANIFEST" 2>/dev/null; then
+    git add -f -- "$MANIFEST" || true
+  else
+    git add -- "$MANIFEST" || true
+  fi
+}
+
 run() {
   if $DRY_RUN; then
     printf '[dry-run] %q\n' "$@"
@@ -420,9 +450,12 @@ submodulize_one_shot_apply_manifest() {
 
   if $DRY_RUN; then
     echo "Dry run complete."
+    submodulize_stage_root_manifest
     $BOOTSTRAP && echo "Bootstrap: would commit on submodulized, then run unsubmodulize replay (omit --dry-run)." >&2
     exit 0
   fi
+
+  submodulize_stage_root_manifest
 
   if ! $NO_COMMIT; then
     if git diff --cached --quiet 2>/dev/null; then
@@ -432,7 +465,12 @@ submodulize_one_shot_apply_manifest() {
     fi
   fi
 
-  $BOOTSTRAP || echo "Done. Submodule layout is ready (clean repo)."
+  if $BOOTSTRAP; then
+    :
+  else
+    echo "Done. Submodule layout is ready (clean repo)."
+    submodulize_hint_switch_from_submodule_branch
+  fi
 }
 
 submodulize_bootstrap_pipeline() {
@@ -470,6 +508,7 @@ submodulize_bootstrap_pipeline() {
 
   bash "$SCRIPT_DIR/unsubmodulize.sh" "${unsub_args[@]}"
   echo "Bootstrap complete: submodulized (submodules) and unsubmodulized (vendored replay) are ready." >&2
+  submodulize_hint_switch_from_submodule_branch
 }
 
 submodulize_replay_mode() {

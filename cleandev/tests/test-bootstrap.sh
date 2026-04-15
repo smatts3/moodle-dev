@@ -37,6 +37,10 @@ printf '%s\n' 'mod/testplugin|../plugin-upstream|main' > "$MOODLE/plugin-submodu
 git -C "$MOODLE" show-ref --verify --quiet refs/heads/submodulized || fail "expected submodulized branch"
 git -C "$MOODLE" show-ref --verify --quiet refs/heads/unsubmodulized || fail "expected unsubmodulized branch"
 git -C "$MOODLE" ls-tree submodulized mod/testplugin | grep -q '^160000' || fail "expected gitlink (submodule) at mod/testplugin on submodulized"
+git -C "$MOODLE" ls-tree -r submodulized --name-only | grep -q '^plugin-submodules.manifest$' || fail "expected tracked plugin-submodules.manifest on submodulized"
 git -C "$MOODLE" ls-tree -r unsubmodulized --name-only | grep -q '^mod/testplugin/version.txt$' || fail "expected vendored file on unsubmodulized"
+if git -C "$MOODLE" ls-tree -r unsubmodulized --name-only | grep -q '^plugin-submodules.manifest$'; then
+  fail "did not expect plugin-submodules.manifest on unsubmodulized"
+fi
 
 ok "submodulize bootstrap (auto when submodulized missing)"
