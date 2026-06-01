@@ -1,0 +1,4 @@
+[submodule "submodulizer"]
+	path = submodulizer
+	url = https://github.com/smatts3/submodulizer.git
+	branch = master

@@ -18,8 +18,13 @@ services:
     # Build from ./Dockerfile (php:8.3-apache). lsuonline/moodle-dev:latest has shipped PHP 8.4, which
     # breaks Moodle 4.5 CLI install: "Cannot compile closures which import variables using the use keyword".
     # To use a pre-built image instead, remove `build:` below and set `image: your-registry/moodle-dev:tag`.
-    build: .
-    image: lsuce-moodle-web:local
+    # `secrets:` forwards GITHUB_TOKEN to the build so the Dockerfile can clone the private
+    # lsuonline/moodleus repo. new.sh resolves+exports GITHUB_TOKEN before `docker compose up`.
+    build:
+      context: .
+      secrets:
+        - github_token
+    image: lsuonline/moodle-dev:latest
     container_name: ${BRANCH_NAME}-moodle
     depends_on:
       db:
@@ -89,3 +94,7 @@ services:
 networks:
   traefik:
     external: true
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

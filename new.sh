@@ -88,7 +88,7 @@ ensure_traefik_running() {
 # Usage: set_config [component] name value
 #   - If component is empty or "-", sets a core config
 resolve_submod_github_token() {
-    local github_token_file="${PROJECT_ROOT}/cleandev/.github-token"
+    local github_token_file="${PROJECT_ROOT}/submodulizer-local/.github-token"
     SUBMOD_GIT_TOKEN=""
     if [ "${SUBMODULIZE_SSH:-}" = "1" ]; then
         return 0
@@ -109,20 +109,20 @@ resolve_submod_github_token() {
     fi
     if [ -t 0 ] && [ -t 1 ]; then
         echo "GitHub personal access token needed for private submodule repos (read access to org repos)." >&2
-        echo "Saved to cleandev/.github-token (gitignored). Use SUBMODULIZE_SSH=1 instead if you use SSH in the container." >&2
+        echo "Saved to submodulizer-local/.github-token (gitignored). Use SUBMODULIZE_SSH=1 instead if you use SSH in the container." >&2
         read -r -s -p "GitHub token: " SUBMOD_GIT_TOKEN
         echo >&2
         if [ -n "$SUBMOD_GIT_TOKEN" ]; then
             mkdir -p "$(dirname "$github_token_file")"
             ( umask 077 && printf '%s\n' "$SUBMOD_GIT_TOKEN" >"$github_token_file" )
             chmod 600 "$github_token_file" 2>/dev/null || true
-            echo "Token stored in cleandev/.github-token" >&2
+            echo "Token stored in submodulizer-local/.github-token" >&2
         fi
     fi
     if [ -n "$SUBMOD_GIT_TOKEN" ]; then
         return 0
     fi
-    echo "new.sh: No GitHub token for --submodulize. Options: export GITHUB_TOKEN or GH_TOKEN, create cleandev/.github-token," >&2
+    echo "new.sh: No GitHub token for --submodulize. Options: export GITHUB_TOKEN or GH_TOKEN, create submodulizer-local/.github-token," >&2
     echo "  run this script in a terminal (interactive prompt), or set SUBMODULIZE_SSH=1 for SSH URLs." >&2
     exit 1
 }
@@ -167,9 +167,9 @@ while [[ $# -gt 0 ]]; do
     Options:
         -h --help        Shows this text.
         -s --skip        Skip automatic Moodle installation.
-        --submodulize    After merge, run cleandev/submodulize.sh --no-replay for manifest plugins (submodules).
+        --submodulize    After merge, run submodulizer/submodulize.sh --no-replay for manifest plugins (submodules).
                          Safe on cleandev-style trees: paths already in .gitmodules are skipped (no bulk no-op run).
-                         GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file cleandev/.github-token,
+                         GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file submodulizer-local/.github-token,
                          or an interactive prompt (first run) saves the token there (gitignored). Alternatively
                          SUBMODULIZE_SSH=1 with SSH usable inside the container.";
             exit;
@@ -196,8 +196,16 @@ if [ -z "$NAME" ]; then
     NAME=$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -An -t x1 | tr -d ' \n')
 fi
 
-# Populated when --submodulize runs (env, cleandev/.github-token, or prompt).
+# Populated when --submodulize runs (env, submodulizer-local/.github-token, or prompt).
 SUBMOD_GIT_TOKEN=""
+
+# Resolve a GitHub token now: the Docker build clones the private lsuonline/moodleus
+# repo, so GITHUB_TOKEN must be exported before `docker compose up` so the
+# `github_token` build secret declared in docker-compose.yml can pick it up.
+# The same token is reused for --submodulize further down (no second prompt).
+# shellcheck source=submodulizer-local/lib-github-token.sh
+. "${PROJECT_ROOT}/submodulizer-local/lib-github-token.sh"
+resolve_github_token || exit 1
 
 # Ensure Traefik infrastructure is ready
 ensure_traefik_network
@@ -209,14 +217,14 @@ BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 # with block_lsu_people). skip-worktree on ues_people and config.php for a clean git status after startup.
 # enrol/workdaystudent and blocks/wdsprefs come from the lsuce-moodle tree (or --submodulize manifest).
 if [ "$SUBMODULIZE" = true ]; then
-  if [ ! -f "${PROJECT_ROOT}/cleandev/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/manifest-submodulize-redundant.sh" ] || [ ! -f "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest" ]; then
-    echo "new.sh --submodulize requires cleandev/submodulize.sh, cleandev/manifest-submodulize-redundant.sh, and cleandev/plugin-submodules.manifest next to new.sh." >&2
+  if [ ! -f "${PROJECT_ROOT}/submodulizer/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer-local/manifest-submodulize-redundant.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer-local/plugin-submodules.manifest" ]; then
+    echo "new.sh --submodulize requires submodulizer/submodulize.sh (submodule; run 'git submodule update --init --recursive'), submodulizer-local/manifest-submodulize-redundant.sh, and submodulizer-local/plugin-submodules.manifest." >&2
     exit 1
   fi
   resolve_submod_github_token
-  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
-  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/manifest-submodulize-redundant.sh")" "${NAME}-moodle:/tmp/manifest-submodulize-redundant.sh"
-  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/cleandev/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer-local/manifest-submodulize-redundant.sh")" "${NAME}-moodle:/tmp/manifest-submodulize-redundant.sh"
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer-local/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
   # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted"
   MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest'
   submod_docker_env=(-u www-data)
@@ -231,11 +239,11 @@ if [ "$SUBMODULIZE" = true ]; then
     cd /var/www/html
     git config --add safe.directory /var/www/html
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-      git config --local url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+      git config --local url."https://smatts3%40lsu.edu:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
     fi
     rm -rf blocks/ues_people
-    git fetch origin develop
-    git merge origin/develop
+    git fetch origin MOODLE_405_MAIN
+    git merge origin/MOODLE_405_MAIN
     git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree
     rm -rf blocks/ues_people
     cp /tmp/plugin-submodules.manifest /var/www/html/plugin-submodules.manifest
@@ -249,14 +257,23 @@ if [ "$SUBMODULIZE" = true ]; then
     git update-index --skip-worktree config.php
   '
 else
-  MSYS_NO_PATHCONV=1 docker exec -u www-data "${NAME}-moodle" sh -c '
-    cd /var/www/html && \
-    git config --add safe.directory /var/www/html && \
-    rm -rf blocks/ues_people && \
-    git fetch origin develop && \
-    git merge origin/develop && \
-    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree && \
-    rm -rf blocks/ues_people && \
+  # Pass GITHUB_TOKEN into the container so the fetch against the private
+  # lsuonline/moodleus can authenticate. Once set, `git config --local
+  # url...insteadOf` writes the rewrite into /var/www/html/.git/config so
+  # subsequent in-container git operations (e.g. moodle-pull) work without
+  # re-supplying the token.
+  MSYS_NO_PATHCONV=1 docker exec -u www-data -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" "${NAME}-moodle" sh -c '
+    set -e
+    cd /var/www/html
+    git config --add safe.directory /var/www/html
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      git config --local url."https://smatts3%40lsu.edu:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+    fi
+    rm -rf blocks/ues_people
+    git fetch origin MOODLE_405_MAIN
+    git merge origin/MOODLE_405_MAIN
+    git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree
+    rm -rf blocks/ues_people
     git update-index --skip-worktree config.php
   '
 fi

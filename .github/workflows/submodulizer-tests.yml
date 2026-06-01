@@ -1,0 +1,29 @@
+name: submodulizer tests
+
+on:
+  push:
+    paths:
+      - ".gitmodules"
+      - "submodulizer"
+      - "submodulizer-local/**"
+      - ".github/workflows/submodulizer-tests.yml"
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - "submodulizer"
+      - "submodulizer-local/**"
+      - ".github/workflows/submodulizer-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run submodulizer test suite (upstream)
+        run: bash submodulizer/tests/run.sh

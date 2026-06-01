@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Exit 0 if running submodulize.sh would be a no-op: every active manifest path is already listed
 # in .gitmodules and .gitmodules is non-empty. Exit 1 otherwise (submodulize should run).
-# Used by new.sh --submodulize and cleandev/tests.
+# Used by new.sh --submodulize and submodulizer/tests.
 # Default manifest: ROOT/plugin-submodules.manifest (same as submodulize.sh).
 #
-# Usage: ./cleandev/manifest-submodulize-redundant.sh --repo ROOT [--manifest PATH]
+# Usage: ./submodulizer-local/manifest-submodulize-redundant.sh --repo ROOT [--manifest PATH]
 set -euo pipefail
 
 REPO_ROOT=""

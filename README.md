@@ -62,7 +62,7 @@ To convert vendored plugin directories in the container to Git submodules (see *
 ./new.sh NAME --submodulize
 ```
 
-GitHub auth for private `lsuonline/*` repos: `GITHUB_TOKEN` or `GH_TOKEN`, file `cleandev/.github-token` (gitignored), interactive prompt when run in a TTY, or `SUBMODULIZE_SSH=1` if SSH works inside the container.
+GitHub auth for private `lsuonline/*` repos: `GITHUB_TOKEN` or `GH_TOKEN`, file `submodulizer-local/.github-token` (gitignored), interactive prompt when run in a TTY, or `SUBMODULIZE_SSH=1` if SSH works inside the container.
 
 # Build
 
@@ -90,13 +90,21 @@ These are **branches on the Moodle repo** (`lsuce-moodle`), not branch names in 
 
 **Current repo state:** This project ships **layout converters** (`submodulize.sh` / `unsubmodulize.sh`). **Replay is the default:** they build `submodulized` / `unsubmodulized` branches with **one superproject commit per plugin-repo commit** (chronological ordering, carry-forward). **`--fork-point`** defaults to local **`master`** (else **`main`**) when omitted, if a default can be chosen safely; **`--source`** defaults for **unsub** to **`unsubmodulized`**, else **`master`**, else **`main`**, else **`submodulized`** (for **sub**: **`submodulized`**, **`master`**, **`main`**). Use **`--no-replay`** for one-shot conversion over the manifest only. A `new.sh` mode that detects vendored vs submodulized state without manual choice is still not implemented.
 
-**Branch policy, Docker image decision, and updating the manifest from the CSV:** [cleandev/TEAM-PROCESS.md](cleandev/TEAM-PROCESS.md).
+**Branch policy, Docker image decision, and updating the manifest from the CSV:** [submodulizer-local/TEAM-PROCESS.md](submodulizer-local/TEAM-PROCESS.md).
 
-# Submodule tooling (`cleandev/`)
+# Submodule tooling (`submodulizer/` + `submodulizer-local/`)
 
-## Manifest (`cleandev/plugin-submodules.manifest`)
+The conversion scripts (`submodulize.sh`, `unsubmodulize.sh`, their tests) live in **[smatts3/submodulizer](https://github.com/smatts3/submodulizer)**, vendored here as a Git submodule at `submodulizer/`. Project-owned glue (manifest, team process, runner config) lives next to it in `submodulizer-local/`.
 
-This repo keeps a **canonical copy** under `cleandev/` for linting and for `new.sh --submodulize` (copied into the Moodle tree at runtime). When you run `submodulize.sh` / `unsubmodulize.sh` against a checkout, the default manifest path is **`plugin-submodules.manifest` at the Moodle superproject root** (`--repo` / current directory), not next to the scripts; use `--manifest PATH` to override.
+After cloning this repo:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Manifest (`submodulizer-local/plugin-submodules.manifest`)
+
+This repo keeps a **canonical copy** under `submodulizer-local/` for linting and for `new.sh --submodulize` (copied into the Moodle tree at runtime). When you run `submodulize.sh` / `unsubmodulize.sh` against a checkout, the default manifest path is **`plugin-submodules.manifest` at the Moodle superproject root** (`--repo` / current directory), not next to the scripts; use `--manifest PATH` to override.
 
 - Format: `relative_path|clone_url|branch` (e.g. `mod/hvp|https://github.com/...|main`). Lines starting with `#` are ignored.
 - If the third field is empty, scripts default the branch to `main`; if `refs/heads/<branch>` is missing on the remote, they omit `-b` and use the remote’s default branch.
@@ -109,20 +117,20 @@ This repo keeps a **canonical copy** under `cleandev/` for linting and for `new.
 
 | Script | Role |
 |--------|------|
-| `cleandev/submodulize.sh` | Default **replay**; **`--fork-point`** defaults to `master`/`main` when omitted (see script help). **`--no-replay`**: one-shot vendored → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
-| `cleandev/unsubmodulize.sh` | Default **replay**; same **`--fork-point`** defaulting. **`--no-replay`**: one-shot submodules → vendored (clone depth 1, drop nested `.git`, `git add`). Same `GITHUB_TOKEN` / `--ssh` as `submodulize.sh`. |
+| `submodulizer/submodulize.sh` | Default **replay**; **`--fork-point`** defaults to `master`/`main` when omitted (see script help). **`--no-replay`**: one-shot vendored → submodules (sparse-checkout disabled first; skips paths already in `.gitmodules`; `GITHUB_TOKEN` via `-c url...insteadOf` for `ls-remote` / `submodule add`). |
+| `submodulizer/unsubmodulize.sh` | Default **replay**; same **`--fork-point`** defaulting. **`--no-replay`**: one-shot submodules → vendored (clone depth 1, drop nested `.git`, `git add`). Same `GITHUB_TOKEN` / `--ssh` as `submodulize.sh`. |
 
 Run manually from a Moodle clone:
 
 ```bash
-./cleandev/submodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
-./cleandev/unsubmodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+./submodulizer/submodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
+./submodulizer/unsubmodulize.sh [--no-replay] [--dry-run] [--no-commit] [--ssh] [--manifest PATH] [--repo ROOT]
 ```
 
 Automated tests (manifest lint, PAT wiring checks, `submodulize`/`unsubmodulize` round-trip in temp repos—no changes to your working tree):
 
 ```bash
-bash cleandev/tests/run.sh
+bash submodulizer/tests/run.sh
 ```
 
 ## Container startup (`new.sh`)
@@ -130,9 +138,9 @@ bash cleandev/tests/run.sh
 - Compose project name = first argument (containers `{NAME}-moodle`, etc.).
 - Web service builds from `.` per `docker-compose.yml`.
 - As `www-data`: `git fetch` / `git merge origin/develop`; removes `blocks/ues_people` and uses `skip-worktree` so it does not clash with `block_lsu_people` (see `config/moodle-pull` for the same idea on `git pull`).
-- With `--submodulize`: copies scripts into the container, stages `cleandev/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh --no-replay` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
+- With `--submodulize`: copies scripts into the container, stages `submodulizer-local/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh --no-replay` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
 
-Secrets: `cleandev/.github-token` is listed in `.gitignore`.
+Secrets: `submodulizer-local/.github-token` is listed in `.gitignore`.
 
 # Roadmap
 

@@ -2,7 +2,7 @@
 
 This document covers **branch policy** for [lsuce-moodle](https://github.com/lsuonline/lsuce-moodle), the **Docker image decision** for this repo, and **how to refresh** `plugin-submodules.manifest` from the plugin inventory CSV.
 
-**Where the manifest lives:** On **cleandev**, treat `plugin-submodules.manifest` as part of the Moodle superproject (repo root), alongside `.gitmodules`. The copy in **this** repo under [`cleandev/plugin-submodules.manifest`](plugin-submodules.manifest) is the maintained source for CSV refresh and CI lint; `submodulize.sh` / `unsubmodulize.sh` default to `ROOT/plugin-submodules.manifest` unless you pass `--manifest`.
+**Where the manifest lives:** On **cleandev**, treat `plugin-submodules.manifest` as part of the Moodle superproject (repo root), alongside `.gitmodules`. The copy in **this** repo under [`submodulizer-local/plugin-submodules.manifest`](plugin-submodules.manifest) is the maintained source for CSV refresh and CI lint; `submodulize.sh` / `unsubmodulize.sh` default to `ROOT/plugin-submodules.manifest` unless you pass `--manifest`.
 
 **Branch replay (default):** `unsubmodulize.sh` and `submodulize.sh` run replay unless you pass **`--no-replay`**. Replay builds histories with **one Moodle superproject commit per plugin-repo commit** (chronological order, carry-forward). **`--fork-point`** defaults to local **`master`** (else **`main`**) when omitted, when the script can infer it; otherwise pass it explicitly. **`--source`** defaults when omitted: **unsub** prefers **`unsubmodulized`**, then **`master`**, **`main`**, **`submodulized`**; **sub** prefers **`submodulized`**, **`master`**, **`main`**. Source tips may be **gitlinks or vendored trees** (tree matched to plugin commits). Defaults **`--target`** branch names (`submodulized`, `unsubmodulized`). If the fork-point checkout is **vendored** at a manifest path, the script matches the embedded tree to a plugin commit (or use `--plugin-base path=SHA`). `new.sh --submodulize` runs **`submodulize.sh --no-replay`** (one-shot only).
 
@@ -32,8 +32,8 @@ This document covers **branch policy** for [lsuce-moodle](https://github.com/lsu
 ### Local Docker stack (`new.sh`)
 
 - **Without `--submodulize`:** Container tracks **vendored** layout after merge from `origin/develop` (matches **develop**).
-- **With `--submodulize`:** After that merge, runs `submodulize.sh --no-replay` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `cleandev/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
-- Never commit **`cleandev/.github-token`** (gitignored).
+- **With `--submodulize`:** After that merge, runs `submodulize.sh --no-replay` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `submodulizer-local/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
+- Never commit **`submodulizer-local/.github-token`** (gitignored).
 
 ### Submodule hygiene
 
