@@ -1,3 +1,8 @@
 confidential
-cleandev/github-runner.env
-cleandev/.github-token
+submodulizer-local/github-runner.env
+submodulizer-local/.github-token
+
+# Local sandbox repos used when iterating on submodulizer.sh. These are not
+# real submodules (no entries in .gitmodules, no remotes) -- keep them out of
+# git status / future stages.
+/demo/

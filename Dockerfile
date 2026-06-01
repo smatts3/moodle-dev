@@ -3,11 +3,28 @@ FROM php:8.3-apache
 # Install basic tools
 RUN apt update && apt install git -y
 
-# Import dev source code
-RUN su -g www-data -c "git clone --branch develop --single-branch https://github.com/lsuonline/lsuce-moodle.git /var/www/html/"
+# Import dev source code. lsuonline/moodleus is private; the token comes in via
+# a BuildKit secret (id=github_token). docker-compose.yml maps it from the
+# GITHUB_TOKEN env var; build.sh passes --secret id=github_token,env=GITHUB_TOKEN.
+# Both entry points use submodulizer-local/lib-github-token.sh to populate
+# GITHUB_TOKEN. The token is consumed via `git -c url...insteadOf`, so neither
+# the token nor the username persist in image layers or /var/www/html/.git/config.
+# Falls back to an anonymous clone when no secret is provided (useful for testing
+# against any future public mirror; fails for the real private repo).
+RUN --mount=type=secret,id=github_token \
+    su -g www-data -c 'URL=https://github.com/lsuonline/moodleus.git; \
+        if [ -s /run/secrets/github_token ]; then \
+            TOKEN=$(cat /run/secrets/github_token); \
+            git -c "url.https://smatts3%40lsu.edu:${TOKEN}@github.com/.insteadOf=https://github.com/" \
+                clone --branch MOODLE_405_MAIN --single-branch "$URL" /var/www/html/; \
+        else \
+            git clone --branch MOODLE_405_MAIN --single-branch "$URL" /var/www/html/; \
+        fi'
 
-# Install dependencies
-RUN apt-get install -y --fix-missing \
+# Install dependencies. `apt-get update` must run in the same layer as install:
+# the base image ships a cached apt index that pins -security package versions
+# Debian removes over time (e.g. libpng1.6 .deb 404s on stale indexes).
+RUN apt-get update && apt-get install -y --fix-missing \
 		libpng-dev \
 		libonig-dev \
 		libjpeg-dev \

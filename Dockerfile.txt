@@ -3,11 +3,23 @@ FROM php:8.3-apache
 # Install basic tools
 RUN apt update && apt install git -y
 
-# Import dev source code
-RUN su -g www-data -c "git clone --branch develop --single-branch https://github.com/lsuonline/lsuce-moodle.git /var/www/html/"
+# Import dev source code. See Dockerfile for full notes on auth: the token
+# comes in via a BuildKit secret (id=github_token) supplied by build.sh /
+# docker-compose.yml, consumed via `git -c url...insteadOf` so it never
+# persists in image layers or .git/config.
+RUN --mount=type=secret,id=github_token \
+    su -g www-data -c 'URL=https://github.com/lsuonline/moodleus.git; \
+        if [ -s /run/secrets/github_token ]; then \
+            TOKEN=$(cat /run/secrets/github_token); \
+            git -c "url.https://smatts3%40lsu.edu:${TOKEN}@github.com/.insteadOf=https://github.com/" \
+                clone --branch MOODLE_405_MAIN --single-branch "$URL" /var/www/html/; \
+        else \
+            git clone --branch MOODLE_405_MAIN --single-branch "$URL" /var/www/html/; \
+        fi'
 
-# Install dependencies
-RUN apt-get install -y \
+# Install dependencies. apt-get update must be in the same layer as install
+# (stale base-image apt index causes -security 404s on removed packages).
+RUN apt-get update && apt-get install -y \
         libpng-dev \
         libonig-dev \
         libjpeg-dev \

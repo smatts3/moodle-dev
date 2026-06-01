@@ -2,6 +2,10 @@
 
 This document covers **branch policy** for [lsuce-moodle](https://github.com/lsuonline/lsuce-moodle), the **Docker image decision** for this repo, and **how to refresh** `plugin-submodules.manifest` from the plugin inventory CSV.
 
+**Where the manifest lives:** On **cleandev**, treat `plugin-submodules.manifest` as part of the Moodle superproject (repo root), alongside `.gitmodules`. The copy in **this** repo under [`submodulizer-local/plugin-submodules.manifest`](plugin-submodules.manifest) is the maintained source for CSV refresh and CI lint; `submodulize.sh` / `unsubmodulize.sh` default to `ROOT/plugin-submodules.manifest` unless you pass `--manifest`.
+
+**Branch replay (default):** `unsubmodulize.sh` and `submodulize.sh` run replay unless you pass **`--no-replay`**. Replay builds histories with **one Moodle superproject commit per plugin-repo commit** (chronological order, carry-forward). **`--fork-point`** defaults to local **`master`** (else **`main`**) when omitted, when the script can infer it; otherwise pass it explicitly. **`--source`** defaults when omitted: **unsub** prefers **`unsubmodulized`**, then **`master`**, **`main`**, **`submodulized`**; **sub** prefers **`submodulized`**, **`master`**, **`main`**. Source tips may be **gitlinks or vendored trees** (tree matched to plugin commits). Defaults **`--target`** branch names (`submodulized`, `unsubmodulized`). If the fork-point checkout is **vendored** at a manifest path, the script matches the embedded tree to a plugin commit (or use `--plugin-base path=SHA`). `new.sh --submodulize` runs **`submodulize.sh --no-replay`** (one-shot only).
+
 ---
 
 ## 1. Team process (develop ↔ cleandev)
@@ -28,8 +32,8 @@ This document covers **branch policy** for [lsuce-moodle](https://github.com/lsu
 ### Local Docker stack (`new.sh`)
 
 - **Without `--submodulize`:** Container tracks **vendored** layout after merge from `origin/develop` (matches **develop**).
-- **With `--submodulize`:** After that merge, runs `submodulize.sh` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `cleandev/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
-- Never commit **`cleandev/.github-token`** (gitignored).
+- **With `--submodulize`:** After that merge, runs `submodulize.sh --no-replay` so manifest-listed paths become **submodules** (closer to **cleandev**). Requires `GITHUB_TOKEN` / `submodulizer-local/.github-token` or `SUBMODULIZE_SSH=1` for private GitHub repos.
+- Never commit **`submodulizer-local/.github-token`** (gitignored).
 
 ### Submodule hygiene
 
@@ -90,7 +94,33 @@ Do **not** add separate submodule lines per element subdirectory.
 
 ### Monorepos
 
-If **one Git repository** contains **multiple** top-level Moodle plugin paths (e.g. Kaltura, Microsoft o365-moodle, `lsu-enrol_ues`), **do not** add one manifest line per path with the same URL: `submodulize.sh` cannot “clone once, map subpaths.” Keep a **commented block** in `plugin-submodules.manifest` listing the URL and paths (see existing `# --- Monorepos ---` section), and leave those plugins **vendored** or handle them with a **manual** procedure until tooling supports it.
+If **one Git repository** contains **multiple** top-level Moodle plugin paths (e.g. Kaltura, Microsoft o365-moodle, `lsu-enrol_ues`), **do not** add one manifest line per path with the same URL: `submodulize.sh` cannot “clone once, map subpaths.” Keep a **commented block** in `plugin-submodules.manifest` listing the URL and paths (see `# --- Monorepos ---` in the manifest). Treat those directories as **vendored** in the superproject unless you adopt an advanced layout (see below).
+
+#### One-shot: refresh vendored monorepo plugins (develop or cleandev)
+
+Use this when upstream shipped changes and you need the same Moodle paths updated without submodule tooling.
+
+1. **Note the source** from the manifest comment block (clone URL and the list of Moodle-relative paths, e.g. `mod/kalvidassign`).
+2. **Clone upstream** somewhere outside the Moodle tree (temp is fine), on the branch or tag you intend to ship:
+   ```bash
+   git clone --depth 1 -b BRANCH_OR_TAG https://github.com/org/monorepo.git /tmp/monorepo-src
+   ```
+   Use a full clone if you need history or a non-default branch tip.
+3. **Map paths** — upstream layout varies by project. Under `/tmp/monorepo-src`, locate the directory that corresponds to each Moodle path (often the path matches the repo tree; if the project nests plugins under `moodle/` or similar, copy from there).
+4. **Copy into lsuce-moodle** from the Moodle repo root, one path at a time (adjust source side to match step 3):
+   ```bash
+   rsync -a --delete /tmp/monorepo-src/mod/kalvidassign/ mod/kalvidassign/
+   ```
+   Prefer `--delete` only when you intend to mirror upstream exactly; otherwise omit it. On Windows without `rsync`, use a graphical diff tool or `cp -r` with care.
+5. **Review** (`git status`, smoke test in Moodle), then **commit** in **lsuce-moodle** (single commit per upstream bump or per path—follow team convention).
+
+Repeat for each path listed under that URL in the manifest comment. Bundles such as **Kaltura** (`moodle_plugin`), **Kaltura gallery** (`moodle-local_kalturamediagallery`), **o365-moodle**, and **lsu-enrol_ues** are independent clones; refresh each comment group from its own remote.
+
+#### One-shot: cleandev when monorepo paths stay vendored
+
+On **cleandev**, submodule-backed plugins use `.gitmodules`; monorepo-backed paths stay **normal tracked directories** in the superproject (no submodule entry). Do not add duplicate manifest active lines for the same URL. After `git submodule update --init`, those paths behave like core tree: edit, commit, and push on **lsuce-moodle** unless your team splits them out later.
+
+*Automated “clone once, map subpaths” for the manifest is still not implemented; the steps above are the supported manual approach.*
 
 ### No usable HTTPS URL
 
@@ -98,7 +128,7 @@ If the CSV has no working public URL (internal, defunct, empty), add or keep a *
 
 ### After editing the manifest
 
-1. Run **`submodulize.sh --dry-run`** from a **test clone** of lsuce-moodle to sanity-check paths and remotes.
+1. Run **`submodulize.sh --no-replay --dry-run`** from a **test clone** of lsuce-moodle to sanity-check paths and remotes.
 2. Commit manifest changes in **this** repo (`lsuce_moodle_project`) when the tooling repo owns the file; if the manifest is versioned only in lsuce-moodle, commit there per your layout.
 
 For script flags and `GITHUB_TOKEN` behavior, see the headers in `submodulize.sh` and `unsubmodulize.sh`.
