@@ -25,5 +25,23 @@ jobs:
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
+      # GitHub Actions runners ship without a git identity. The upstream
+      # submodulizer tests build temp repos and `git commit` into them, which
+      # fails with `fatal: empty ident name` unless we set one here.
+      - name: Configure git identity for upstream tests
+        run: |
+          git config --global user.email "ci@github.actions"
+          git config --global user.name "GitHub Actions (submodulizer-tests)"
+
+      # Upstream submodulizer tests (test-manifest-submod-redundant.sh,
+      # test-shellcheck.sh) expect manifest-submodulize-redundant.sh to live at
+      # the repo root next to submodulize.sh. In this project it ships as
+      # project-owned glue under submodulizer-local/. Symlink it into the
+      # submodule checkout for the duration of CI so the tests find it.
+      # CI-only: nothing here is committed and the submodule working tree is
+      # discarded with the runner.
+      - name: Expose manifest-submodulize-redundant.sh to upstream tests
+        run: ln -sf ../submodulizer-local/manifest-submodulize-redundant.sh submodulizer/manifest-submodulize-redundant.sh
+
       - name: Run submodulizer test suite (upstream)
         run: bash submodulizer/tests/run.sh
