@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y --fix-missing \
 		libxslt-dev \
 		zip \
 		unzip \
+		jq \
 	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-install -j$(nproc) gd mysqli pdo_mysql zip intl xml opcache \
 	&& a2enmod rewrite \

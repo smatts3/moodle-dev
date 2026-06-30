@@ -138,7 +138,7 @@ bash submodulizer/tests/run.sh
 - Compose project name = first argument (containers `{NAME}-moodle`, etc.).
 - Web service builds from `.` per `docker-compose.yml`.
 - As `www-data`: `git fetch` / `git merge origin/develop`; removes `blocks/ues_people` and uses `skip-worktree` so it does not clash with `block_lsu_people` (see `config/moodle-pull` for the same idea on `git pull`).
-- With `--submodulize`: copies scripts into the container, stages `submodulizer-local/plugin-submodules.manifest` into `/var/www/html/plugin-submodules.manifest` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh --no-replay` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`).
+- With `--submodulize`: copies scripts into the container, stages `submodulizer/submodulizer.json` (and, when present, `submodulizer/submodulizer-moodle.json` version pins) into `/var/www/html/` after the merge, resolves GitHub token, sets local `url...insteadOf` when using HTTPS token, runs `manifest-submodulize-redundant.sh` / `submodulize.sh --no-replay` with default manifest paths (`--repo /var/www/html`, optional SSH via `SUBMODULIZE_SSH=1`). Requires `jq` in the Moodle container.
 
 Secrets: `submodulizer-local/.github-token` is listed in `.gitignore`.
 

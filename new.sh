@@ -167,8 +167,10 @@ while [[ $# -gt 0 ]]; do
     Options:
         -h --help        Shows this text.
         -s --skip        Skip automatic Moodle installation.
-        --submodulize    After merge, run submodulizer/submodulize.sh --no-replay for manifest plugins (submodules).
-                         Safe on cleandev-style trees: paths already in .gitmodules are skipped (no bulk no-op run).
+        --submodulize    After merge, run submodulizer/submodulize.sh --no-replay for manifest plugins (submodules),
+                         using submodulizer/submodulizer.json (and optional submodulizer/submodulizer-moodle.json pins).
+                         Requires jq in the Moodle container. Safe on cleandev-style trees: paths already in
+                         .gitmodules are skipped (no bulk no-op run).
                          GitHub auth (private lsuonline/*): GITHUB_TOKEN or GH_TOKEN, file submodulizer-local/.github-token,
                          or an interactive prompt (first run) saves the token there (gitignored). Alternatively
                          SUBMODULIZE_SSH=1 with SSH usable inside the container.";
@@ -217,16 +219,28 @@ BRANCH_NAME=$NAME docker compose -p "${NAME}" up -d
 # with block_lsu_people). skip-worktree on ues_people and config.php for a clean git status after startup.
 # enrol/workdaystudent and blocks/wdsprefs come from the lsuce-moodle tree (or --submodulize manifest).
 if [ "$SUBMODULIZE" = true ]; then
-  if [ ! -f "${PROJECT_ROOT}/submodulizer/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer-local/manifest-submodulize-redundant.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer-local/plugin-submodules.manifest" ]; then
-    echo "new.sh --submodulize requires submodulizer/submodulize.sh (submodule; run 'git submodule update --init --recursive'), submodulizer-local/manifest-submodulize-redundant.sh, and submodulizer-local/plugin-submodules.manifest." >&2
+  if [ ! -f "${PROJECT_ROOT}/submodulizer/submodulize.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer-local/manifest-submodulize-redundant.sh" ] || [ ! -f "${PROJECT_ROOT}/submodulizer/submodulizer.json" ]; then
+    echo "new.sh --submodulize requires submodulizer/submodulize.sh (submodule; run 'git submodule update --init --recursive'), submodulizer-local/manifest-submodulize-redundant.sh, and submodulizer/submodulizer.json." >&2
     exit 1
   fi
   resolve_submod_github_token
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer/submodulize.sh")" "${NAME}-moodle:/tmp/submodulize.sh"
   MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer-local/manifest-submodulize-redundant.sh")" "${NAME}-moodle:/tmp/manifest-submodulize-redundant.sh"
-  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer-local/plugin-submodules.manifest")" "${NAME}-moodle:/tmp/plugin-submodules.manifest"
-  # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted"
-  MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c 'sed -i '"'"'s/\r$//'"'"' /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest && chmod +x /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh && chown www-data:www-data /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/plugin-submodules.manifest'
+  MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer/submodulizer.json")" "${NAME}-moodle:/tmp/submodulizer.json"
+  # submodulizer-moodle.json (version pins) is optional: absence means "use submodulizer.json branch tips".
+  if [ -f "${PROJECT_ROOT}/submodulizer/submodulizer-moodle.json" ]; then
+    MSYS_NO_PATHCONV=1 docker cp "$(host_path_for_docker_cp "${PROJECT_ROOT}/submodulizer/submodulizer-moodle.json")" "${NAME}-moodle:/tmp/submodulizer-moodle.json"
+  fi
+  # docker cp leaves root-owned files; sed -i as www-data fails with "cannot rename: Operation not permitted".
+  # Only the scripts need chmod +x; the JSON manifests are data files.
+  MSYS_NO_PATHCONV=1 docker exec "${NAME}-moodle" sh -c '
+    set -e
+    files="/tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh /tmp/submodulizer.json"
+    [ -f /tmp/submodulizer-moodle.json ] && files="$files /tmp/submodulizer-moodle.json"
+    sed -i "s/\r\$//" $files
+    chmod +x /tmp/submodulize.sh /tmp/manifest-submodulize-redundant.sh
+    chown www-data:www-data $files
+  '
   submod_docker_env=(-u www-data)
   if [ -n "$SUBMOD_GIT_TOKEN" ]; then
     submod_docker_env+=(-e "GITHUB_TOKEN=${SUBMOD_GIT_TOKEN}")
@@ -246,7 +260,10 @@ if [ "$SUBMODULIZE" = true ]; then
     git merge origin/MOODLE_405_MAIN
     git ls-files blocks/ues_people | xargs -r git update-index --skip-worktree
     rm -rf blocks/ues_people
-    cp /tmp/plugin-submodules.manifest /var/www/html/plugin-submodules.manifest
+    # submodulize.sh and manifest-submodulize-redundant.sh both auto-discover these at the repo root
+    # (/var/www/html). submodulizer-moodle.json is optional (version pins); copy it only when present.
+    cp /tmp/submodulizer.json /var/www/html/submodulizer.json
+    [ -f /tmp/submodulizer-moodle.json ] && cp /tmp/submodulizer-moodle.json /var/www/html/submodulizer-moodle.json
     SMF="--no-commit"
     if [ "${SUBMODULIZE_USE_SSH:-}" = "1" ]; then SMF="$SMF --ssh"; fi
     if bash /tmp/manifest-submodulize-redundant.sh --repo /var/www/html; then
